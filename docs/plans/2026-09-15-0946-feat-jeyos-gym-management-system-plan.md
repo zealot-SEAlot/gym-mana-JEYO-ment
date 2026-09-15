@@ -45,7 +45,7 @@ The gym's internet can drop, and the concept paper requires check-in to keep wor
 
 - A1. Owner or manager: sets plans and prices, manages stock and staff accounts, reads reports and insights, and checks the business from home.
 - A2. Front-desk staff: registers members, takes payments, sells products and shakes, sells walk-in day passes, and checks people in from the desk.
-- A3. Member: shows a QR code at the door and, once member logins exist, views their own code, expiry, and visits.
+- A3. Member: shows a QR code at the door and, once member logins exist, views their own code, expiry, and visits online.
 - A4. Walk-in customer: pays for a single day and enters with a day pass.
 - A5. Door tablet: a tablet or spare phone at the entrance that scans codes and shows the result.
 
@@ -65,6 +65,8 @@ Trainers are not actors in this version (see Scope Boundaries).
 - **All extras stay planned and are built after the core in a fixed cut order.** Governs R39, R40. (session-settled: user-directed — chosen over a fixed smaller first version of core, insights, backup, and owner remote view: the team wants the full scope, accepting that the demo scope is settled late.)
 - **Trainer features wait for a later version.** (session-settled: user-directed — chosen over trainer client lists with paid sessions, a view-only client list, and full coaching tools: keeps the first version on the problems from the client discussion.)
 - **Early renewals extend from the old expiry date; late renewals start on the payment date.** Members who renew early lose no days. Governs R11.
+- **Members use their own phones only through the online service.** Members set their password on a gym device at the desk and view their code, expiry, and visits online, which also works inside the gym while its internet is up. Governs R37, R43. (session-settled: user-directed — chosen over member phones reaching the gym PC over the gym Wi-Fi and over no member self-view in this version: members' phones never show certificate warnings and never need the gym's certificate authority.)
+- **A monthly renewal after a month-end clamp returns to the member's original day.** An expiry of January 31 renews to February 28, then to March 31. Governs R55. (session-settled: user-directed — chosen over staying on the clamped day: a member whose expiry falls on the 29th to 31st does not lose days every year.)
 
 ### Requirements
 
@@ -97,7 +99,7 @@ Trainers are not actors in this version (see Scope Boundaries).
 - R12. The desk shows a list of members who are expiring soon.
 - R44. The owner can register an existing member with an expiry date carried over from the logbook or wall list, marked as carried over, recording who entered it, and not counted as income in the daily report.
 - R47. A member's expiry date is always recalculated from their non-voided membership payments in order, starting from any carried-over date (R44), and voiding a day-pass payment makes that pass invalid.
-- R55. The expiry date is the member's last active day, and a plan length in months that would land past the end of a shorter month ends on that month's last day (January 31, 2027 plus one month is February 28, 2027).
+- R55. The expiry date is the member's last active day. A plan length in months that would land past the end of a shorter month ends on that month's last day (January 31, 2027 plus one month is February 28, 2027), and the next on-time monthly renewal returns to the original day (March 31, 2027).
 - R59. Staff can update a member's contact details and photo, only the owner can change a member's name, and every change is logged.
 - R60. Plans are retired rather than deleted, and changing a plan's length or price affects only future renewals.
 - R62. The owner can permanently erase a former member's personal data on request, removing their name, contact details, photo, and code while keeping their payments and check-ins as anonymous records in reports.
@@ -162,9 +164,9 @@ flowchart TB
 - R34. Whenever the gym PC has internet, it copies the gym's data to an online backup automatically, and the owner can restore that backup onto a replacement PC.
 - R35. The owner can view today's sales, attendance, stock, and expiring members from any internet-connected device, without editing.
 - R36. Every from-home screen reads the online backup copy, shows when that copy was last updated, and keeps working while the gym PC is off or offline.
-- R37. Members sign in to see their QR code, expiry date, and visit history, on the gym Wi-Fi and from home, first setting their own password with a one-time code staff give them at the desk.
+- R37. Members sign in to the online service to see their QR code, expiry date, and visit history, from home or inside the gym while its internet is up, first setting their own password on a gym device at the desk with a one-time code staff give them.
 - R38. Members receive a reminder by SMS or email shortly before their membership expires and again when it has expired, sent from the online copy only after its first update on or after the day the reminder comes due, so a reminder that comes due while the gym PC is off goes out after the PC next connects.
-- R43. Only the owner's sign-in and member sign-ins can read the online copy, and a signed-in member, on the gym Wi-Fi or from home, sees only their own code, expiry date, and visits.
+- R43. Only the owner's sign-in and member sign-ins can read the online copy, and a signed-in member sees only their own code, expiry date, and visits.
 
 ```mermaid
 flowchart TB
@@ -172,10 +174,9 @@ flowchart TB
   PC --> W["Gym Wi-Fi, no internet needed"]
   W --> T["Door tablet"]
   W --> SP["Staff phones and tablets"]
-  W --> MP["Member phones, once member logins exist"]
   PC -->|"whenever internet is available"| C["Online backup copy"]
   C --> OH["Owner view from home"]
-  C --> MH["Member access from home"]
+  C --> MH["Member logins on members' own phones, from home or inside the gym while internet is up"]
   C --> RM["Expiry reminders"]
 ```
 
@@ -246,6 +247,7 @@ flowchart TB
 - AE13. **Covers R48.** **Given** a paper sale from 30 hours ago, **when** a staff member tries to enter it, **then** the entry is refused and the owner can enter it instead.
 - AE14. **Covers R55.** **Given** a Monthly membership that expires on January 31, 2027, **when** the member renews on January 30, **then** the new expiry is February 28, 2027.
 - AE15. **Covers R57.** **Given** an active member not yet checked in today, **when** the door tablet and the desk check them in at the same moment, **then** only one check-in is accepted and the other is rejected as already used today.
+- AE16. **Covers R55.** **Given** a Monthly membership whose January 31, 2027 expiry was renewed on time to February 28, 2027, **when** the member renews again on February 27, **then** the new expiry is March 31, 2027.
 
 ### Scope Boundaries
 
@@ -286,6 +288,8 @@ flowchart TB
 - Customers send GCash and Maya payments only to an account the owner controls, so the owner can match e-wallet payments against its transaction history.
 - The gym has, or will get, a printer for the closing-time member list in R45.
 - Report contents in R28 are inferred from the client discussion and have not been confirmed with the owner.
+- The month-end renewal rule in R55 is the team's choice and has not been confirmed with the owner.
+- Member logins (R37) need internet even inside the gym, because members' own phones use only the online service.
 - The gym is assumed to be small, with hundreds of members rather than thousands; actual member, visitor, and product counts were not gathered.
 
 ### Outstanding Questions
@@ -308,13 +312,13 @@ flowchart TB
 
 ## Planning Contract
 
-**Product Contract preservation:** changed. R62 (owner erasure of a former member's personal data) was added after the user confirmed it during plan scoping, and R39 now lists it in the core. The Summary gained one sentence on the build approach. KTD12 and KTD13 resolve the former open questions on insight thresholds and online sign-in storage, and a new open question asks how members carried over from the logbook give consent. Every other requirement keeps its meaning and ID.
+**Product Contract preservation:** changed. R62 (owner erasure of a former member's personal data) was added after the user confirmed it during plan scoping, and R39 now lists it in the core. After the document review, the user decided that members' own phones use only the online service, which reworded R37 and R43, and that monthly renewals return to the original day after a month-end clamp, which extended R55 and added AE16. The Summary gained one sentence on the build approach. KTD12 and KTD13 resolve the former open questions on insight thresholds and online sign-in storage, and a new open question asks how members carried over from the logbook give consent. Every other requirement keeps its meaning and ID.
 
 ### Key Technical Decisions
 
 - KTD1. **TypeScript full stack: Node.js 24 LTS with Express 5, React 19 with Vite, and SQLite, in one repo of npm workspaces laid out per KTD16.** One language covers the server, the desk and owner screens, and the camera code the door tablet must run in the browser. Governs R1, R2. (session-settled: user-directed — chosen over a Python FastAPI backend with React and over a C# ASP.NET Core backend with React: the team knows TypeScript, and the browser camera code is JavaScript either way.)
 - KTD2. **SQLite through `better-sqlite3` with Drizzle ORM, both pinned to exact versions, set up for a desk PC that can lose power.** Every connection turns on WAL mode, foreign keys, `secure_delete`, a 5-second busy timeout, and `synchronous = FULL`. SQLite documents that WAL with `NORMAL` can roll back recently committed transactions after a power loss, and the gym's write volume is tiny. The schema has no cascading deletes, and each module keeps its own schema file in `packages/domain/src/schema`, re-exported from one index, while `packages/server` keeps the Drizzle config and the generated migrations. Member photos live in a folder on disk under server-generated names and are served only through guarded routes (KTD6). Node's built-in `node:sqlite` and Prisma's current tag are both release candidates, so both were passed over for a PC that runs unattended.
-- KTD3. **Local HTTPS with a local certificate authority trusted on every gym device and limited by X.509 name constraints to the gym PC's hostname, its reserved LAN address, and `localhost`.** mkcert cannot add name constraints, so the authority is created with OpenSSL, and even a copied authority key cannot sign trusted certificates for other websites. The certificate is renewed about every two years by following the runbook. After issuing it, the authority's private key leaves the gym PC and the owner keeps it offline, because anyone holding that key can impersonate any website to the staff phones that trust it. A public Let's Encrypt certificate was rejected because renewal needs internet, and browsers only open the camera on secure pages.
+- KTD3. **Local HTTPS with a local certificate authority trusted on every gym device and limited by X.509 name constraints to the gym PC's hostname, its reserved LAN address, and `localhost`.** mkcert cannot add name constraints, so the authority is created with OpenSSL, and even a copied authority key cannot sign trusted certificates for other websites. The certificate is renewed about every two years by following the runbook. After issuing it, the authority's private key leaves the gym PC and the owner keeps it offline, because anyone holding that key can impersonate any website to the staff phones that trust it. A public Let's Encrypt certificate was rejected because renewal needs internet, and browsers only open the camera on secure pages. Only the gym's own devices and the owner's and staff phones trust the authority. Members' phones never install it, and members reach their details only through the hosted service (R37).
 - KTD4. **The door tablet scans with the browser's built-in `BarcodeDetector`, loading the `barcode-detector` polyfill where the detector is missing or cannot read QR codes.** The polyfill's WebAssembly file is bundled with the client instead of fetched from a CDN, so scanning works with no internet, and the scan page's content security policy allows `wasm-unsafe-eval`. The same scan page also accepts typed input, so a USB or Bluetooth keyboard-style QR scanner can replace the camera without code changes. The older QR libraries `html5-qrcode` and `zxing-js` are unmaintained.
 - KTD5. **Owner and staff use server-side sessions stored in SQLite, and the door tablet uses a paired device token held in an `HttpOnly` cookie.**
   - Passwords are hashed with argon2id, with `bcryptjs` as the fallback if the native install fails, and cookie-authenticated writes carry a CSRF synchronizer token.
@@ -326,7 +330,7 @@ flowchart TB
 
   Governs R3, R4, R42, R49, R50, R51, R52, R54.
 - KTD6. **Every route, including the desk live feed and photo requests, declares its allowed roles where it is defined, and one guard denies any route without a declaration.** The permission test discovers routes from the router and checks each one against owner, staff, door device, member, and signed-out requests. Hiding buttons in the React app is not an access control.
-- KTD7. **Money is stored as integer centavos parsed from decimal text, and times are stored in UTC.** Amounts are never converted by multiplying a JavaScript number, because ₱1.15 × 100 is not exactly 115. Every record stores its original time, its entry time, and its Manila date, which one shared helper computes from the original time with Luxon. Plan-length math uses Luxon's month addition, which ends on the last day of shorter months. When the clock is earlier than the latest stored record, the server refuses new records and shows a fix-the-clock screen until the owner confirms the time. Governs R55, R56.
+- KTD7. **Money is stored as integer centavos parsed from decimal text, and times are stored in UTC.** Amounts are never converted by multiplying a JavaScript number, because ₱1.15 × 100 is not exactly 115. Every record stores its original time, its entry time, and its Manila date, which one shared helper computes from the original time with Luxon. Plan-length math uses Luxon's month addition, which ends on the last day of shorter months. Replay adds the total months since the current run of on-time renewals started to that run's start date, so a clamped February 28 renews to March 31 rather than March 28. A late renewal, a carried-over date, or a plan length in days starts a new run. When the clock is earlier than the latest stored record, the server refuses new records and shows a fix-the-clock screen until the owner confirms the time. Governs R55, R56.
 - KTD8. **Membership state is derived, not stored, and every check-in has an explicit kind.**
   - Expiry is replayed from the member's one allowed non-voided carried-over entry and their non-voided membership payments. Payments are ordered by original time, then by row ID, using the plan length, unit, and price recorded on each payment.
   - A check-in is either scan-using or an override. Scan-using means a door accept, the day's first desk check-in, or a back-entered check-in. An override is a desk check-in after the day's scan is used, linked to the stored rejection it overrode.
@@ -336,9 +340,9 @@ flowchart TB
 
   Governs R11, R15, R16, R20, R44, R47, R57.
 - KTD9. **One append-only audit log, written in the same transaction as the change it records, with personal before-and-after values kept in a separate table.** Database triggers refuse updates and deletes on both tables. The one exception is an R62 erasure, which redacts the member's personal values. The log covers corrections, voids, desk overrides, carried-over entries, after-outage entries, refused back-entries, member edits, and erasures. Governs R41, R44, R46, R48, R59, R62.
-- KTD10. **The desk screen receives door results through Server-Sent Events that require an owner or staff session.** Each event carries its row ID. After a reconnect or server restart, the desk resumes from the last ID it saw and reloads today's rejections over the normal API. An open feed and automatic reloads never count as session activity for R52. When the session ends or the account is disabled, the feed closes and the desk shows a full-screen sign-in prompt saying door results are paused; after sign-in the feed resumes and highlights the scans that arrived meanwhile. Every rejected scan is stored for R58, after the scanned value is checked for format and shortened, and screens render it only as plain text.
+- KTD10. **The desk screen receives door results through Server-Sent Events that require an owner or staff session.** Each event carries an ID from one door-event sequence shared by accepted check-ins and rejected scans, so the two kinds never share an ID. After a reconnect or server restart, the desk resumes from the last ID it saw and reloads today's rejections over the normal API. An open feed and automatic reloads never count as session activity for R52. When the session ends or the account is disabled, the feed closes and the desk shows a full-screen sign-in prompt saying door results are paused; after sign-in the feed resumes and highlights the scans that arrived meanwhile. Every rejected scan is stored for R58, after the scanned value is checked for format and shortened, and screens render it only as plain text.
 - KTD11. **The server runs as a Windows service through NSSM, under its own Windows account, restarting after crashes and starting on boot.** The data folder is readable only by that account. `node-windows` is a stale beta, and PM2 has no maintained way to run as a Windows service.
-- KTD12. **Owner insights are transparent rules, not a trained model.** A member is at risk when their visits in the last 14 days fall below half of their weekly average over the previous 8 weeks and their membership expires within 30 days. A product's days of stock left come from its average daily sales over the last 14 days. Thresholds live in owner settings (KTD18), and demo mode applies only to insights routes, never to scans or sales. Insights say more data is needed until a member has 4 weeks of history or a product has 14 days of sales. Governs R29, R30, R31, R32, R33. (session-settled: user-approved — chosen over a trained machine-learning model: with a few hundred members and a few months of data, rules match or beat a model and can be explained to the owner.)
+- KTD12. **Owner insights are transparent rules, not a trained model.** A member is at risk when their weekly visit rate over the last 14 days (visits divided by 2) falls below half of their weekly average over the previous 8 weeks and their membership expires within 30 days. A product's days of stock left come from its average daily sales over the last 14 days. Thresholds live in owner settings (KTD18), and demo mode applies only to insights routes, never to scans or sales. Insights say more data is needed until a member has 4 weeks of history or a product has 14 days of sales. Governs R29, R30, R31, R32, R33. (session-settled: user-approved — chosen over a trained machine-learning model: with a few hundred members and a few months of data, rules match or beat a model and can be explained to the owner.)
 - KTD13. **Online extras replicate the gym PC's database to a private bucket with Litestream, and a small hosted service publishes a filtered, read-only copy from it.**
   - The gym PC's replication key can write and delete current objects but cannot delete object versions or change bucket settings. Litestream keeps at most 14 days of snapshots, versioning keeps deleted or overwritten objects recoverable for 14 days before a lifecycle rule expires them, and public access is blocked.
   - The gym PC runs a publish job with `packages/domain` that builds a filtered published database: each member's replayed expiry date, their own code and visit history, daily report totals, the owner and member password hashes, and the heartbeat. It uploads that file to a separate publish prefix. Staff accounts, sessions, devices, codes, audit tables, and payment detail never leave the gym PC in it.
@@ -361,7 +365,7 @@ flowchart TB
   - `packages/domain` holds the Drizzle table definitions, pure rules, and read queries: expiry replay, status, check-in rules, and report aggregation.
   - `packages/server` runs at the gym, `packages/client` holds the React screens, and `packages/online` is the hosted service.
   - Both servers import `domain` and `shared`, and neither server imports the other, so from-home views and reminders use the same expiry rules as the gym.
-- KTD17. **Releases move the database forward only, with the services stopped and a verified way back.** Migrations only add. Each pull request carries at most one migration, regenerated after rebasing on main, and CI fails when the schema and migrations drift apart. The schema version is stored in the database, and older code refuses to start on a newer schema. The previous release records the before snapshot and the new release records the after snapshot. Each release lists any intended changes to expiry dates or report totals, and only differences missing from that list restore the copy. Pre-update copies stay in the service-account data folder and are deleted 14 days after their release is confirmed. The update sequence is in the release diagram below. Confirm on the pinned Drizzle version how it rebuilds SQLite tables, since SQLite ignores foreign-key settings changed inside a transaction.
+- KTD17. **Releases move the database forward only, with the services stopped and a verified way back.** From the go-live baseline (U21), migrations only add; before go-live there is no live data, so the team may squash and regenerate migrations. Each pull request carries at most one migration, regenerated after rebasing on main, and CI fails when the schema and migrations drift apart. The schema version is stored in the database, and older code refuses to start on a newer schema. The previous release records the before snapshot and the new release records the after snapshot. Each release lists any intended changes to expiry dates or report totals, and only differences missing from that list restore the copy. Pre-update copies stay in the service-account data folder and are deleted 14 days after their release is confirmed. The update sequence is in the release diagram below. Confirm on the pinned Drizzle version how it rebuilds SQLite tables, since SQLite ignores foreign-key settings changed inside a transaction.
 - KTD18. **One typed owner settings table, where each module registers its own keys.** It holds the day-pass price (R6), the closing time (R45), the session idle timeout (R52), and the insight thresholds (KTD12). U2 builds it, so no track waits on another for a setting.
 - KTD19. **Payments and back-entries share one entry contract.** Recording a payment runs inside the caller's transaction and takes an entry context: who, the original time, and whether it is a normal or after-outage entry. The R48 window is checked once, in that context. Each owning service (payments, sales, stock, check-ins, day passes) provides its own void and back-entry operations. The corrections and outage screens only orchestrate those operations. Governs R27, R41, R46, R48.
 - KTD20. **One client navigation shell and one responsive convention for every screen.** The shell built in U3 fixes the owner and staff screen groups, so each track adds its screens into a known place. Below 640 pixels wide, dense screens such as the daily report, corrections, and sales stack their sections and collapse them instead of showing wide tables. Governs R2.
@@ -392,7 +396,7 @@ flowchart TB
   Server --> Photos
   DB -.->|"replica and filtered published file when online, extra"| Bucket["Private bucket: replica and publish prefixes, 14-day versions"]
   Bucket -.->|"publish-prefix read-only key, staging swap"| Hosted["Hosted read-only service, extra"]
-  Hosted -.-> Home["Owner and member views from home, expiry reminders"]
+  Hosted -.-> Home["Owner and member views online, expiry reminders"]
 ```
 
 A door scan resolves in one transaction, so the door, the desk, and the database always agree on the result.
@@ -440,7 +444,7 @@ Expiry is always replayed from the membership record, which is what lets voids, 
 flowchart TB
   C["The one non-voided carried-over expiry date, if any"] --> Fold
   P["Non-voided membership payments, ordered by original time, then row ID"] --> Fold
-  Fold["Apply each payment with its recorded plan length and unit: on or before the current expiry extends from it; after expiry starts on the payment date; month-end clamping"] --> E["Current expiry date, the last active day"]
+  Fold["Apply each payment with its recorded plan length and unit: on or before the current expiry extends from it; after expiry starts on the payment date; months are added from the start of the current run, so a clamped month-end returns to the original day"] --> E["Current expiry date, the last active day"]
   E --> S["Status for today in Manila: active, expiring soon at 7 days or fewer, or expired"]
 ```
 
@@ -477,8 +481,8 @@ packages/
     walkins/  sales/  stock/  reports/  corrections/  outage/
     insights/  backup/
   client/src/
-    setup/  auth/  desk/  door/  owner/  member/  print/
-  online/src/                    hosted read-only service for the extras
+    setup/  auth/  desk/  door/  owner/  print/
+  online/src/                    hosted read-only service for the extras, including member logins
 e2e/                             Playwright specs and fake-camera fixtures
 ops/                             install, device setup, update, power-cut, backup, go-live, and handover runbooks
 ```
@@ -522,6 +526,9 @@ ops/                             install, device setup, update, power-cut, backu
 | A bucket or provider key is committed to the repo | The member database becomes readable or writable by outsiders | Keys only in environment files outside the repo, plus a secret scan in CI (KTD13, U1) |
 | The router gives the gym PC a new address after a power cut | Tablet and phones cannot connect, and the certificate no longer matches | Reserve the gym PC's address in the router before issuing the certificate, and check it after each power cut (U14) |
 | The scanning polyfill fetches its WebAssembly file from the internet | Door scanning fails offline on tablets without a built-in detector | Bundle the file with the client and test scanning with the internet disconnected (KTD4, U22) |
+| Litestream does not officially support Windows | Cloud backup fails on the gym PC | Prove replication and a restore on the gym PC at the start of U16, before the from-home extras build on it (U16) |
+| A rollback after opening discards records entered since the update | Payments, sales, or check-ins lost | Install releases after closing and check the System Status screen before opening; before any later rollback, print the day's records and back-enter them afterward (U13, U20) |
+| The door screen keeps showing a member's name and photo after a scan | People walking past see member details | The result clears from the door screen after 5 seconds (U22) |
 
 ### System-Wide Impact
 
@@ -546,7 +553,7 @@ ops/                             install, device setup, update, power-cut, backu
 
 ### Deferred to Implementation
 
-- The object storage provider for U16 and the hosting provider for U17, chosen for free or low-cost tiers when those extras start.
+- The object storage provider for U16 and the hosting provider for U17, chosen for free or low-cost tiers when those extras start. The hosting provider must keep a persistent disk for the online-only database and run scheduled jobs without waiting for incoming requests (U17, U19).
 - Final tuning of the KTD12 thresholds once real check-in and sales data exists.
 - The exact session idle timeout for R52, set with the owner during U3.
 - How the pinned Drizzle version rebuilds SQLite tables during migrations, checked in U20 before the first migration release (KTD17).
@@ -666,7 +673,7 @@ flowchart TB
   8. Add the clock guard from KTD7, and validate request bodies with shared Zod schemas through one error handler.
 - **Test scenarios:**
   - 2026-09-15T15:59:59Z falls on September 15 in Manila, and 2026-09-15T16:00:00Z falls on September 16.
-  - January 31, 2027 plus one month is February 28, 2027, and January 31, 2028 plus one month is February 29, 2028.
+  - January 31, 2027 plus one month is February 28, 2027, plus two months is March 31, 2027, and January 31, 2028 plus one month is February 29, 2028.
   - ₱1.15 converts to 115 centavos, ₱0.29 to 29, and ₱800.50 to 80050, and an amount with a fraction of a centavo is rejected.
   - A new database connection reports WAL mode, full sync, `secure_delete`, and foreign keys on, and a foreign key violation is refused.
   - An audit row written inside a transaction disappears when the transaction rolls back.
@@ -758,7 +765,7 @@ flowchart TB
   - A scan request without a device token is refused, and a scan response contains no contact details or member ID.
   - Signed-out, door device, and member requests to the feed are refused, and disabling a staff account closes its open feed.
   - When the desk session times out, the desk shows the paused sign-in prompt, and after signing in it highlights the scans that arrived meanwhile.
-  - A desk that reconnects with its last event ID receives the events it missed, and after a server restart it reloads today's rejections.
+  - A desk that reconnects with its last event ID receives the accepted and rejected scans it missed, in order and without duplicates, and after a server restart it reloads today's rejections.
 - **Verification:** With simulated scan requests, the desk screen shows each result within about two seconds, and staff complete an override from a stored rejection.
 
 ### U6. Payments core and entry contract
@@ -785,19 +792,21 @@ flowchart TB
 ### U7. Plans, renewals, and expiry dating
 
 - **Goal:** The owner defines plans, staff renew members, and every member's expiry and status color follow the dating rules exactly.
-- **Requirements:** R6, R7, R10, R11, R12, R47, R55, R60; F3; AE3, AE4, AE14.
+- **Requirements:** R6, R7, R10, R11, R12, R47, R55, R60; F3; AE3, AE4, AE14, AE16.
 - **Dependencies:** U4, U6.
 - **Files:** `packages/server/src/plans/plans.routes.ts`, `packages/server/src/plans/plans.service.ts`, `packages/server/src/membership/ledger.ts`, `packages/server/src/membership/renewals.routes.ts`, `packages/domain/src/membership/expiry.ts`, `packages/domain/src/membership/status.ts`, `packages/domain/src/reports/membership-section.ts`, `packages/shared/src/schemas/plan.ts`, `packages/client/src/owner/PlansPage.tsx`, `packages/client/src/desk/RenewPage.tsx`, `packages/client/src/desk/MemberList.tsx`, `packages/client/src/desk/ExpiringSoon.tsx`, `packages/server/src/plans/plans.service.test.ts`, `packages/domain/src/membership/expiry.test.ts`, `packages/server/src/membership/renewals.routes.test.ts`, `packages/client/src/desk/MemberList.test.tsx`
 - **Approach:**
   1. Store plans with a price in centavos, a length in days or months, and a retired flag, and register the day-pass price setting (R6, R60, KTD18).
   2. Save each renewal through the U6 entry contract with required snapshot columns for plan length, unit, and price, created in the first migration because they cannot be backfilled (R7).
-  3. Extend the domain expiry replay with non-voided membership payments per KTD8 and the expiry diagram.
+  3. Extend the domain expiry replay with non-voided membership payments per KTD8, the month-addition runs from KTD7, and the expiry diagram.
   4. Compute the status color and the expiring-soon list from the replayed expiry and today's Manila date, and show a status word (Active, Expiring soon, Expired) beside every color so status never depends on color alone (R10, R12).
   5. Provide the membership section of the daily report as a domain query for U11.
 - **Test scenarios:**
   - Covers AE3. With expiry on September 30, a renewal on September 25 gives October 30, and a renewal on October 5 instead gives November 5.
   - Covers AE4. On September 15, an expiry of September 22 shows expiring soon, and September 23 shows active.
   - Covers AE14. With expiry on January 31, 2027, a renewal on January 30 gives February 28, 2027.
+  - Covers AE16. After a January 31, 2027 expiry renews on time to February 28, 2027, a second on-time renewal gives March 31, 2027.
+  - A late renewal starts a new run: with expiry on January 31, 2027, a renewal on March 5 gives April 5, and the next on-time renewal gives May 5.
   - A renewal paid on the expiry date itself extends from that date.
   - A member whose expiry was yesterday shows expired today.
   - Two renewals with the same original time replay in row order, and replaying the same records twice gives the same expiry.
@@ -947,7 +956,7 @@ flowchart TB
   3. Give staff a standard Windows login that cannot read the data folder, and turn on device encryption.
   4. Document the KTD3 certificate steps:
      - Reserve the gym PC's LAN address in the router, create the name-constrained authority and the certificate, then move the authority key off the gym PC.
-     - Trust it on Windows, Android, and iOS, including the separate iOS full-trust step.
+     - Trust it on the gym's devices and the owner's and staff phones (Windows, Android, and iOS, including the separate iOS full-trust step), and never on members' phones.
      - Remove it from a departing staff member's phone.
   5. Document door tablet setup: scan page pinned with screen pinning or Guided Access, camera permission granted, and screen kept awake.
   6. Document desk printing with headers and footers off, the optional kiosk printing setting, Windows Update active hours covering opening hours, and a UPS recommendation.
@@ -979,6 +988,7 @@ flowchart TB
 - **Test scenarios:**
   - Covers AE8. With one week of recorded check-ins and sales, insights report that more data is needed.
   - A member who averaged 3 visits a week for 8 weeks, visited once in the last 14 days, and expires in 20 days is flagged.
+  - A member who averaged 3 visits a week for 8 weeks, visited twice in the last 14 days, and expires in 20 days is flagged, because 1 visit a week is below half of 3.
   - A member with steady visits is not flagged.
   - A product selling 2 a day with 10 in stock shows about 5 days left, and voided sales do not count toward the rate.
   - With demo mode on, insights read the demo database, the banner shows, and a door scan still writes to the real database.
@@ -1030,21 +1040,22 @@ flowchart TB
 
 ### U18. Member logins
 
-- **Goal:** Members see their own code, expiry, and visits at the gym and from home, and nobody else's.
+- **Goal:** Members see their own code, expiry, and visits through the online service, from home or inside the gym while its internet is up, and nobody else's.
 - **Requirements:** R37, R43.
 - **Dependencies:** U17.
-- **Files:** `packages/server/src/members/member-login.ts`, `packages/client/src/member/MemberHome.tsx`, `packages/client/src/desk/MemberAccessCode.tsx`, `packages/online/src/member-views.ts`, `packages/server/src/members/member-login.test.ts`, `packages/online/src/member-views.test.ts`
+- **Files:** `packages/server/src/members/member-login.ts`, `packages/client/src/desk/MemberAccessCode.tsx`, `packages/client/src/desk/SetMemberPassword.tsx`, `packages/online/src/member-views.ts`, `packages/server/src/members/member-login.test.ts`, `packages/online/src/member-views.test.ts`
 - **Approach:**
-  1. Let staff issue a one-time code at the desk under the KTD5 code rules, and let the member set a password with it on the gym Wi-Fi (R37).
-  2. Store the password hash on the gym PC, so it reaches the published online copy with the next replication (KTD13).
-  3. Limit a signed-in member to their own code, expiry, and visits on both the gym PC and the hosted service, and add members to the KTD6 permission matrix (R43).
-  4. Handle a forgotten password with a new desk code.
+  1. Let staff issue a one-time code at the desk under the KTD5 code rules, and let the member set a password with it on a gym device at the desk (R37).
+  2. Store the password hash on the gym PC, so it reaches the published online copy with the next publish (KTD13).
+  3. Give members no session on the gym PC: its only member route sets a password with a desk code, and members' phones never install the gym certificate authority (KTD3).
+  4. Limit a signed-in member on the hosted service to their own code, expiry, and visits, and add member requests to the KTD6 permission matrix on both servers (R43).
+  5. Handle a forgotten password with a new desk code.
 - **Test scenarios:**
   - A one-time code sets a password once, and reusing it or using an expired code is refused.
-  - A signed-in member cannot fetch another member's code, expiry, or visits, on the gym PC or online.
-  - A signed-in member's calls to staff or owner routes are refused.
-  - A password set on the gym Wi-Fi works on the hosted service after the next replication.
-- **Verification:** A test member signs in at the gym and later from home and sees only their own details.
+  - A signed-in member cannot fetch another member's code, expiry, or visits online.
+  - Member requests to any gym PC route other than setting a password with a desk code are refused.
+  - A password set at the desk works on the hosted service after the next publish.
+- **Verification:** A test member sets a password at the desk, then signs in from a phone on mobile data and from a phone on the gym Wi-Fi while the internet is up, sees only their own details, and sees no certificate warning.
 
 ### U19. Expiry reminders
 
@@ -1121,12 +1132,14 @@ flowchart TB
   1. Build the KTD4 scanner: rear camera, 5 to 10 detection attempts per second, the bundled polyfill when the detector is missing or cannot read QR codes, and typed input accepted.
   2. Ignore the same code read again within 3 seconds, so one card held up submits one scan.
   3. Show the name, the photo when one exists, the result, and the reason from the U5 scan response (R14).
+  4. Clear the result from the screen after 5 seconds, so the next person in line does not see the previous member's name and photo.
 - **Execution note:** Prove scanning on the real door tablet over the gym network before the parallel tracks start.
 - **Test scenarios:**
   - Covers AE7. A result for a member without a photo shows the name and result only.
   - The polyfill loads when `BarcodeDetector` is missing or does not support QR codes, and it never requests a file from outside the gym PC.
   - Typed input from a keyboard-style scanner submits the same way as a camera read.
   - The same code read repeatedly within 3 seconds submits one scan.
+  - A result, including the member's photo, clears from the door screen 5 seconds after it appears.
   - End to end, the fake camera plays a member QR video, the door page shows the acceptance, and the desk page shows the event.
 - **Verification:** On the gym network, the real tablet scans a printed card with no certificate warning, the desk screen updates within about two seconds, and a second scan is rejected, including once with the router's internet connection unplugged.
 
