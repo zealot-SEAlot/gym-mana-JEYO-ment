@@ -7,6 +7,10 @@
 - Unit: <!-- e.g. U7 -->
 - Requirements: <!-- e.g. R11, R55, AE3 -->
 
+## In my own words
+
+<!-- The unit owner explains how this works and why it was built this way, without copying from the plan or from Claude. Reviewers: ask questions here until you could explain it too. -->
+
 ## How it was tested
 
 <!-- Tests you ran, and anything you checked by hand (screens, devices). -->
