@@ -18,7 +18,7 @@ deepened: 2026-09-15
 - **Product authority:** This Product Contract, built from the team's one-page concept paper ("Initial Project Concept: Jeyo's Gym Management System") and the client discussion it records. The Planning Contract governs how it is built: requirements win on product behavior, and Key Technical Decisions win on mechanism.
 - **Execution profile:** A three-student team over one semester. The team builds the foundation together, then a thin working path from registration to door check-in, then three parallel tracks, then the extras in the cut order of R40.
 - **Stop conditions:** Stop and revisit this plan if the door tablet cannot scan over local HTTPS on the real hardware after the KTD4 fallback, if the course does not accept rule-based insights as the AI feature, or if the owner's confirmed report contents or back-entry rules differ from R28 and R48.
-- **Who finishes:** The team writes the code, commits, opens and reviews pull requests, and merges. No automated agent commits, pushes, or opens pull requests.
+- **Who finishes:** The team owns the code. Claude drafts each unit in small steps with the teammate who owns it; that teammate reads each step, runs its tests, and explains the unit in their own words in the pull request, so every member can defend the code. The team commits, opens and reviews pull requests, and merges. No automated agent commits, pushes, or opens pull requests.
 - **Open blockers:** None.
 
 ---
@@ -275,6 +275,7 @@ flowchart TB
 ### Dependencies and Assumptions
 
 - Jeyo's already has a desk PC or laptop, a Wi-Fi router, and an internet plan; the gym still needs a tablet or spare phone for the door.
+- The gym Wi-Fi lets devices reach each other. Some routers and guest networks block this (client isolation), which only the router's admin login can turn off, so the team checks it at the gym before U14.
 - Browsers let a web page use the camera only over a secure connection, so planning must make the door tablet's camera scanning work on the gym network without internet.
 - The gym PC stays on during opening hours; the online copy refreshes only while it is on and connected.
 - If the router fails, the door tablet cannot reach the gym PC, so check-in moves to the desk (R5).
@@ -341,7 +342,7 @@ flowchart TB
   Governs R11, R15, R16, R20, R44, R47, R57.
 - KTD9. **One append-only audit log, written in the same transaction as the change it records, with personal before-and-after values kept in a separate table.** Database triggers refuse updates and deletes on both tables. The one exception is an R62 erasure, which redacts the member's personal values. The log covers corrections, voids, desk overrides, carried-over entries, after-outage entries, refused back-entries, member edits, and erasures. Governs R41, R44, R46, R48, R59, R62.
 - KTD10. **The desk screen receives door results through Server-Sent Events that require an owner or staff session.** Each event carries an ID from one door-event sequence shared by accepted check-ins and rejected scans, so the two kinds never share an ID. After a reconnect or server restart, the desk resumes from the last ID it saw and reloads today's rejections over the normal API. An open feed and automatic reloads never count as session activity for R52. When the session ends or the account is disabled, the feed closes and the desk shows a full-screen sign-in prompt saying door results are paused; after sign-in the feed resumes and highlights the scans that arrived meanwhile. Every rejected scan is stored for R58, after the scanned value is checked for format and shortened, and screens render it only as plain text.
-- KTD11. **The server runs as a Windows service through NSSM, under its own Windows account, restarting after crashes and starting on boot.** The data folder is readable only by that account. `node-windows` is a stale beta, and PM2 has no maintained way to run as a Windows service.
+- KTD11. **The server runs as a Windows service through NSSM, under its own Windows account, restarting after crashes and starting on boot.** The data folder is readable only by that account. `node-windows` is a stale beta, and PM2 has no maintained way to run as a Windows service. Docker Desktop was also passed over: it starts only after a user signs in to Windows, keeps data inside a WSL2 virtual disk or a shared Windows folder where SQLite's WAL mode is unreliable, and adds port forwarding between Windows and the container, all of which make an unattended PC that loses power more fragile.
 - KTD12. **Owner insights are transparent rules, not a trained model.** A member is at risk when their weekly visit rate over the last 14 days (visits divided by 2) falls below half of their weekly average over the previous 8 weeks and their membership expires within 30 days. A product's days of stock left come from its average daily sales over the last 14 days. Thresholds live in owner settings (KTD18), and demo mode applies only to insights routes, never to scans or sales. Insights say more data is needed until a member has 4 weeks of history or a product has 14 days of sales. Governs R29, R30, R31, R32, R33. (session-settled: user-approved — chosen over a trained machine-learning model: with a few hundred members and a few months of data, rules match or beat a model and can be explained to the owner.)
 - KTD13. **Online extras replicate the gym PC's database to a private bucket with Litestream, and a small hosted service publishes a filtered, read-only copy from it.**
   - The gym PC's replication key can write and delete current objects but cannot delete object versions or change bucket settings. Litestream keeps at most 14 days of snapshots, versioning keeps deleted or overwritten objects recoverable for 14 days before a lifecycle rule expires them, and public access is blocked.
@@ -524,7 +525,7 @@ ops/                             install, device setup, update, power-cut, backu
 | NPC registration thresholds are uncertain | Compliance gap | The owner checks current NPC guidance; not a build blocker |
 | The semester runs short | Extras missing | Core first (R39) and the fixed cut order (R40) |
 | A bucket or provider key is committed to the repo | The member database becomes readable or writable by outsiders | Keys only in environment files outside the repo, plus a secret scan in CI (KTD13, U1) |
-| The router gives the gym PC a new address after a power cut | Tablet and phones cannot connect, and the certificate no longer matches | Reserve the gym PC's address in the router before issuing the certificate, and check it after each power cut (U14) |
+| The router gives the gym PC a new address after a power cut | Tablet and phones cannot connect, and the certificate no longer matches | Reserve the gym PC's address in the router, or set a fixed address on the gym PC itself when nobody can sign in to the router, before issuing the certificate, and check it after each power cut (U14) |
 | The scanning polyfill fetches its WebAssembly file from the internet | Door scanning fails offline on tablets without a built-in detector | Bundle the file with the client and test scanning with the internet disconnected (KTD4, U22) |
 | Litestream does not officially support Windows | Cloud backup fails on the gym PC | Prove replication and a restore on the gym PC at the start of U16, before the from-home extras build on it (U16) |
 | A rollback after opening discards records entered since the update | Payments, sales, or check-ins lost | Install releases after closing and check the System Status screen before opening; before any later rollback, print the day's records and back-enter them afterward (U13, U20) |
@@ -953,20 +954,21 @@ flowchart TB
 - **Approach:**
   1. Document installing Node 24, building the app, and registering it as an NSSM service under its own Windows account, restarting on failure and starting on boot (KTD11).
   2. Keep the database, photos, certificates, setup secret, and service credentials in a data folder outside the repo and outside any synced folder, readable only by the service account.
-  3. Give staff a standard Windows login that cannot read the data folder, and turn on device encryption.
-  4. Document the KTD3 certificate steps:
-     - Reserve the gym PC's LAN address in the router, create the name-constrained authority and the certificate, then move the authority key off the gym PC.
+  3. Set the gym Wi-Fi connection on the gym PC to a Private network and allow only the app's HTTPS port through Windows Firewall, then confirm a phone on the gym Wi-Fi can reach the PC.
+  4. Give staff a standard Windows login that cannot read the data folder, and turn on device encryption.
+  5. Document the KTD3 certificate steps:
+     - Reserve the gym PC's LAN address in the router with the owner's router login. If nobody can sign in to the router, set a fixed address on the gym PC in Windows network settings, picked near the top of the address range and checked unused. Then create the name-constrained authority and the certificate, then move the authority key off the gym PC.
      - Trust it on the gym's devices and the owner's and staff phones (Windows, Android, and iOS, including the separate iOS full-trust step), and never on members' phones.
      - Remove it from a departing staff member's phone.
-  5. Document door tablet setup: scan page pinned with screen pinning or Guided Access, camera permission granted, and screen kept awake.
-  6. Document desk printing with headers and footers off, the optional kiosk printing setting, Windows Update active hours covering opening hours, and a UPS recommendation.
-  7. Write the after-power-cut check:
+  6. Document door tablet setup: scan page pinned with screen pinning or Guided Access, camera permission granted, and screen kept awake.
+  7. Document desk printing with headers and footers off, the optional kiosk printing setting, Windows Update active hours covering opening hours, and a UPS recommendation.
+  8. Write the after-power-cut check:
      - The service is back and the gym PC still has its reserved address.
      - There is no clock warning.
      - The last records before the cut exist.
      - The tablet reconnects.
      - Paper records get entered (U13).
-  8. Document the R5 fallback: when Wi-Fi fails, staff use the app on the gym PC itself through `localhost`.
+  9. Document the R5 fallback: when Wi-Fi fails, staff use the app on the gym PC itself through `localhost`.
 - **Execution note:** Packaging and configuration; the certificate and tablet steps run during the foundation phase so U22 can prove scanning on real hardware.
 - **Test expectation:** none -- operational setup; the clean-install check is the proof.
 - **Verification:**
