@@ -1,0 +1,20 @@
+# Store text files with LF line endings so Windows and other machines produce the same diffs
+* text=auto eol=lf
+
+# Windows scripts keep CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.wasm binary
+*.y4m binary
+*.woff binary
+*.woff2 binary
