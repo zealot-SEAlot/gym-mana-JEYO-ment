@@ -31,6 +31,16 @@ Only the three team members commit, push, and merge to this repository. Every ch
    cd gym-mana-JEYO-ment
    ```
 
+5. Install the dependencies, then the browser that the Playwright tests use:
+
+   ```bash
+   npm ci
+   ```
+
+   ```bash
+   npx playwright install chromium
+   ```
+
 > Keep the clone outside OneDrive, Google Drive, or Dropbox folders if you can. Sync tools can lock or corrupt files while Git and SQLite write them.
 
 ## Everyday workflow
@@ -43,6 +53,12 @@ git switch main
 
 ```bash
 git pull
+```
+
+If the pull changed `package-lock.json`, a teammate added or updated a dependency. Reinstall so your `node_modules` matches:
+
+```bash
+npm ci
 ```
 
 ### 2. Create a branch for one piece of work
@@ -185,7 +201,7 @@ Claude never commits, pushes, or merges; the team does.
 
 - Never push directly to `main`; always use a pull request.
 - A teammate other than the author approves before merge.
-- Tests and checks pass before you ask for review (the CI check arrives with U1).
+- Run `npm run typecheck`, `npm run lint`, and `npm test` before you ask for review. CI runs these and more on every pull request, and a red check means the pull request is not ready to merge.
 - Never commit database files, member photos, certificates, keys, `.env` files, or other personal data. `.gitignore` blocks the common ones, so check `git status` before committing.
 - If a change alters a decision in the plan, update the plan in the same pull request.
 - Each pull request carries at most one database migration (KTD17 in the plan).

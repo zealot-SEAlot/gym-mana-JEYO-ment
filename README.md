@@ -2,8 +2,8 @@
 
 A web app for Jeyo's Hardhit Fitness Center that replaces its logbooks, wall list, and hand-counted stock. It runs on the gym's own PC, so check-ins, payments, and sales keep working when the internet is down.
 
-> **Status (September 15, 2026): planning is done and coding has not started.**
-> The next step is **U1**, setting up the workspace and pull request checks.
+> **Status (September 16, 2026): the code workspace and pull request checks (U1) are in place, but no gym features exist yet.**
+> The next step is **U2**, the server foundation.
 > Everything below describes what the plan says the system *will* do.
 
 ## The problem
@@ -71,7 +71,7 @@ The gym PC holds the only live copy of the data. Devices at the gym reach it ove
 - [x] Requirements: 62 requirements, 7 key flows, 16 acceptance examples
 - [x] Implementation plan: 22 units, reviewed
 - [x] Shared repository and team Git workflow
-- [ ] Phase 1: Foundation (U1 to U3, plus certificates and door tablet setup from U14)
+- [ ] Phase 1: Foundation (U1 to U3, plus certificates and door tablet setup from U14). U1 is done.
 - [ ] Phase 2: Thin working path, from registering a member to a door scan showing on the desk (U4, U5, U6, U22)
 - [ ] Phase 3: Parallel tracks, one teammate each: members (U7, U8), check-in (U9), sales (U10)
 - [ ] Phase 4: Daily report, outage support, corrections, releases (U11 to U13, U20, rest of U14)
@@ -95,21 +95,18 @@ The gym PC holds the only live copy of the data. Devices at the gym reach it ove
 ```text
 README.md            this file
 CONTRIBUTING.md      how the team branches, commits, and merges
+CLAUDE.md            project rules and commands for Claude sessions
 docs/plans/          the requirements and implementation plan
-.github/             pull request template
-```
-
-U1 adds the code workspaces, and U14 adds the install and operations guides:
-
-```text
+.github/             pull request template and the CI workflow
 packages/shared/     code used by both the browser and the server
 packages/domain/     database tables and business rules
 packages/server/     the app that runs on the gym PC
 packages/client/     the React screens (desk, door, owner)
 packages/online/     the hosted read-only service for the extras
-e2e/                 end-to-end tests
-ops/                 install, device setup, update, backup, and handover guides
+e2e/                 end-to-end browser tests (Playwright)
 ```
+
+Config files at the root set up TypeScript (`tsconfig.base.json`), ESLint (`eslint.config.js`), Prettier (`.prettierrc`), Vitest (`vitest.config.ts`), and Playwright (`playwright.config.ts`). U14 adds `ops/`, the install, device setup, update, backup, and handover guides.
 
 ## Reading the plan
 
@@ -125,19 +122,52 @@ The plan is [docs/plans/2026-09-15-0946-feat-jeyos-gym-management-system-plan.md
 
 ## Getting started
 
-There is no code to run yet. To get ready for U1, install:
+Install these once:
 
 - [Node.js 24 LTS](https://nodejs.org/)
 - [Git](https://git-scm.com/)
 - [GitHub CLI](https://cli.github.com/), then run `gh auth login`
 
-Then clone the repo:
+Clone the repo and open the folder:
 
 ```bash
 git clone https://github.com/zealot-SEAlot/gym-mana-JEYO-ment.git
 ```
 
-U1 adds the install, test, and build commands to this section.
+```bash
+cd gym-mana-JEYO-ment
+```
+
+Install the exact dependency versions from `package-lock.json`:
+
+```bash
+npm ci
+```
+
+Download the Chromium browser that the Playwright tests use. It goes into your user folder, once per computer:
+
+```bash
+npx playwright install chromium
+```
+
+If you use VS Code, install the recommended extensions when it offers them, and allow it to use the workspace TypeScript version.
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `npm run typecheck` | Checks the types in every package and in `e2e/` |
+| `npm run lint` | Checks code rules with ESLint; a single warning fails |
+| `npm run format` | Formats the code with Prettier |
+| `npm run format:check` | Only checks the formatting |
+| `npm test` | Runs the unit and component tests |
+| `npm run test:coverage` | Runs the tests and fails if coverage drops below 80% |
+| `npm run test:e2e` | Builds the screens and tests them in a real browser |
+| `npm run build` | Builds the screens into `packages/client/dist` |
+| `npm run dev --workspace @jeyos/client` | Opens the screens with live reload (a placeholder page for now) |
+| `npm run dev --workspace @jeyos/server` | Runs the server and restarts it on save (a placeholder for now) |
+
+Every pull request runs the same checks on GitHub on Windows, plus a dependency audit, a secret scan, and a check that no photos or other binary files were added. Run `npm run typecheck`, `npm run lint`, and `npm test` before asking for review.
 
 ## Contributing
 
