@@ -1,0 +1,9 @@
+{
+  "name": "jeyos-gym-management",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

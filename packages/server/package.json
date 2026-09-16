@@ -1,0 +1,10 @@
+{
+  "name": "@jeyos/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@jeyos/domain": "0.0.0",
+    "@jeyos/shared": "0.0.0"
+  }
+}
