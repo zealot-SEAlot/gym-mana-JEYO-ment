@@ -119,6 +119,8 @@ gh pr review 12 --request-changes --body "The renewal test for AE3 fails on my m
 
 Replace `12` with the pull request number.
 
+GitHub does not let you approve your own pull request, so the reviewer is always a different teammate. Until everyone has repository access, merge your own pull request and write in it that nobody reviewed it.
+
 ### 7. Merge after approval
 
 ```bash
@@ -162,8 +164,10 @@ git add .
 ```
 
 ```bash
-git commit
+git commit --no-edit
 ```
+
+`--no-edit` accepts Git's default merge message. Plain `git commit` opens a text editor instead, which on a fresh Windows install is Vim, and getting out of it needs `:q!`.
 
 ## How we use AI
 
