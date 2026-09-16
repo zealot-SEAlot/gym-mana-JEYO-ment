@@ -16,8 +16,11 @@ test-results/
 !.env.example
 
 # Gym data: never commit (database, photos, backups, certificates)
-/data/
-/backups/
+# No leading slash, so these match at any depth, including packages/server/data/
+data/
+backups/
+photos/
+uploads/
 *.db
 *.db-journal
 *.db-wal
