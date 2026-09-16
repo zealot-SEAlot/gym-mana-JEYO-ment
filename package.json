@@ -12,6 +12,7 @@
     "typecheck": "npm run typecheck --workspaces",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "build": "npm run build --workspaces --if-present",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

@@ -3,7 +3,8 @@
   "compilerOptions": {
     // Vite bundles the client, so imports resolve the way a bundler does
     "module": "preserve",
-    "lib": ["es2024", "dom"]
+    "lib": ["es2024", "dom"],
+    "jsx": "react-jsx"
   },
-  "include": ["src"]
+  "include": ["src", "vite.config.ts"]
 }

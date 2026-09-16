@@ -8,7 +8,7 @@ export default defineConfig({
       provider: "v8",
       include: ["packages/*/src/**/*.{ts,tsx}"],
       // Entry files only start the program; the end-to-end test (U22) covers them
-      exclude: ["packages/server/src/index.ts"],
+      exclude: ["packages/server/src/index.ts", "packages/client/src/main.tsx"],
       reporter: ["text", "html"],
       thresholds: {
         lines: 80,
