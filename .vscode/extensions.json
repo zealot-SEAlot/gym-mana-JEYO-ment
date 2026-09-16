@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "EditorConfig.EditorConfig",
+    "yoavbls.pretty-ts-errors",
+    "vitest.explorer",
+    "ms-playwright.playwright",
+    "GitHub.vscode-pull-request-github",
+    "bierner.markdown-mermaid",
+    "qwtel.sqlite-viewer"
+  ]
+}
