@@ -1,2 +1,2 @@
 // Code the browser and the server both use: request schemas, money, the Manila-day helper, role names.
-export {};
+export const GYM_NAME = "Jeyo's Hardhit Fitness Center";

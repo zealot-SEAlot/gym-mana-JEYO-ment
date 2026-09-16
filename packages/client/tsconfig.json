@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Vite bundles the client, so imports resolve the way a bundler does
+    "module": "preserve",
+    "lib": ["es2024", "dom"]
+  },
+  "include": ["src"]
+}
