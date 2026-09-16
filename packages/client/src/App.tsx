@@ -1,4 +1,5 @@
 import { GYM_NAME } from "@jeyos/shared";
+import "@jeyos/domain";
 
 // Placeholder page. U3 replaces it with the app shell and the owner and staff screens.
 export function App() {
