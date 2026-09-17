@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    // array[i] and record[key] may be undefined, so check before using them
+    "noUncheckedIndexedAccess": true,
+    "target": "es2024",
+    "lib": ["es2024"],
+    "module": "nodenext",
+    // Node runs our .ts files by deleting the types, so ban TypeScript-only syntax that it cannot delete (enum, namespace)
+    "erasableSyntaxOnly": true,
+    // type-only imports must say `import type`, so deleting them leaves valid JavaScript
+    "verbatimModuleSyntax": true,
+    // relative imports name the real file: import { x } from "./money.ts"
+    "allowImportingTsExtensions": true,
+    // tsc only checks types; Node, Vite and Vitest run the code
+    "noEmit": true,
+    "skipLibCheck": true,
+    // each package opts in to the global types it runs with (Node or the browser)
+    "types": []
+  }
+}

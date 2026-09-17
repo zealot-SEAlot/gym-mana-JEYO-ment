@@ -1,0 +1,16 @@
+{
+  "name": "@jeyos/online",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jeyos/domain": "0.0.0",
+    "@jeyos/shared": "0.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.5"
+  }
+}
