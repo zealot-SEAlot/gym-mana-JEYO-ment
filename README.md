@@ -97,6 +97,7 @@ README.md            this file
 CONTRIBUTING.md      how the team branches, commits, and merges
 CLAUDE.md            project rules and commands for Claude sessions
 docs/plans/          the requirements and implementation plan
+docs/sessions/       agendas and decision records from team sessions
 .github/             pull request template and the CI workflow
 packages/shared/     code used by both the browser and the server
 packages/domain/     database tables and business rules
