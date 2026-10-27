@@ -3,8 +3,7 @@ title: Jeyo's Hardhit Gym Management System - Plan
 type: feat
 date: 2026-09-15
 topic: jeyos-gym-management-system
-artifact_contract: ce-unified-plan/v1
-product_contract_source: ce-brainstorm
+source: brainstorm
 execution: code
 deepened: 2026-09-15
 ---
