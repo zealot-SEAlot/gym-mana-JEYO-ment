@@ -1176,7 +1176,7 @@ The root scripts come from U1, and the CI check runs on every pull request the t
 | Secret scan | Part of the CI check | Every pull request | No bucket, host, or messaging key is committed |
 | Unit and integration tests | `npm test` | Every pull request, in CI | Business rules, services, routes, security checks, and the permission matrix |
 | Schema drift and upgrade test | Part of `npm test` in CI | Pull requests that change the schema or migrations | Migrations match the schema and upgrade the previous release's database without changing expiries or report totals |
-| End-to-end scan test | `npm run test:e2e` locally, ticked on the pull request checklist | Pull requests touching door, desk, or check-in code, and before each client demo | The scan path works end to end with a simulated camera |
+| End-to-end browser test | `npm run test:e2e` | Every pull request, in CI | The built client loads in Chromium, and from U22 on, the scan path works end to end with a simulated camera |
 | Test coverage | `npm run test:coverage` | Every pull request, in CI | Coverage stays at or above 80 percent |
 | Dependency audit | Part of the CI check | Every pull request | No dependency carries a known moderate or higher vulnerability |
 | Real-device scan | Scan a printed card on the door tablet over the gym Wi-Fi, once with the internet disconnected | After U22 and before each client demo | Camera, certificate, and offline scanning work on the actual hardware |
