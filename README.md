@@ -14,13 +14,13 @@ A web app for Jeyo's Hardhit Fitness Center that replaces its logbooks, wall lis
 - The owner has no current view of who has paid, who trained today, or what sold.
 - The gym's internet drops, and check-in has to keep working when it does.
 
-## What it will do
+## What it will do?
 
 **Core** (built and tested first)
 
 - Members on owner-defined plans (Monthly, Student Monthly, 3-Month, and so on), with color-coded status: active, expiring soon, or expired.
 - QR check-in at a door tablet. Each member code works once per day, the screen shows the member's photo, and staff can override at the desk.
-- Walk-ins pay first and get a one-day QR pass.
+- Walk-ins pay first and get a one day QR code pass.
 - Product and shake sales with stock counts, low-stock warnings, and add-ons such as banana or egg.
 - Cash, GCash, and Maya payments, with e-wallet reference numbers.
 - A daily report for closing out the cash drawer and GCash/Maya history.
