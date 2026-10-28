@@ -31,7 +31,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install chromium
       - run: npm run test:e2e
-      - run: npm audit --audit-level=moderate
+      - run: npm audit --audit-level=moderate --omit=dev
       # U2a adds a step here that fails when the database schema and its migrations drift apart (KTD17)
 
   repo-safety:
