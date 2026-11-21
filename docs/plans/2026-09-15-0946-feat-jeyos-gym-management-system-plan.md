@@ -64,6 +64,7 @@ Trainers are not actors in this version (see Scope Boundaries).
 - **The AI feature is offline owner insights: renewal-risk alerts and stock run-out predictions.** Governs R29, R30, R31, R32, R33. (session-settled: user-directed — chosen over a face check at the door, which the user dropped, and over logbook-page scanning, an ask-your-gym assistant, and a busy-hours forecast: runs without internet and protects renewal and sales income.)
 - **All extras stay planned and are built after the core in a fixed cut order.** Governs R39, R40. (session-settled: user-directed — chosen over a fixed smaller first version of core, insights, backup, and owner remote view: the team wants the full scope, accepting that the demo scope is settled late.)
 - **Trainer features wait for a later version.** (session-settled: user-directed — chosen over trainer client lists with paid sessions, a view-only client list, and full coaching tools: keeps the first version on the problems from the client discussion.) The semi-manager asked for coaching in the Week 3 interview, both monthly and per session. Until trainer features are built, the owner sells coaching as priced menu items with no stock count, so coaching income still reaches payments and the daily report (R24, R27).
+- **There is exactly one owner account, used only by the owner.** Governs R49, R50. Setup creates it, and nothing can add a second owner or promote a staff account. (session-settled: team decision, U2a schema session.)
 - **Owner and staff sign in with a sign-in name and password, not an email address.** Governs R3, R49, R50. Setup and sign-in happen on the gym PC and the gym Wi-Fi, where no email can be sent or checked, and a forgotten password is reset with the owner's recovery code (R49) or by the owner (R50). (session-settled: team schema session, U2a.)
 - **Walk-ins pay at the desk before they get a pass.** Governs R19, R20. There is no self-service walk-in form: the Week 3 staff interview confirmed that unpaid walk-ins are the problem, and a form on the online service would let people in before paying and would stop working when the internet drops.
 - **Early renewals extend from the old expiry date; late renewals start on the payment date.** Members who renew early lose no days. Governs R11.
@@ -143,9 +144,10 @@ flowchart TB
 
 - R22. The owner maintains a product list with prices, and sealed items (for example energy drinks, bottled water, supplement tubs) carry a stock count.
 - R23. Selling a sealed item lowers its stock count and warns at a low-stock level the owner sets for that product, and a sale of an item already at zero still goes through with a separate out-of-stock warning.
-- R24. Shakes are sold as menu items with optional priced add-ons (for example banana, egg), and each sale records the add-ons chosen.
+- R24. Shakes are sold as menu items with optional priced add-ons (for example banana, egg), and each sale records the add-ons chosen. Coaching is sold as a menu item too, and a coaching sale records the member it is for.
 - R25. Shake sales do not deduct bulk ingredients such as protein powder, bananas, or eggs.
-- R26. The owner records restocks, which raise stock counts and build a purchase history.
+- R26. The owner records restocks, which raise stock counts and build a purchase history, with the amount paid entered when the owner has it.
+- R63. The owner corrects a sealed item's stock count to the number actually on the shelf, choosing a reason (breakage, spoiled, miscount, or other), and the correction is recorded as its own stock movement with who made it and when.
 
 **Payments and reports**
 
@@ -168,7 +170,7 @@ flowchart TB
 - R36. Every from-home screen reads the online backup copy, shows when that copy was last updated, and keeps working while the gym PC is off or offline.
 - R37. Members sign in to the online service to see their QR code, expiry date, and visit history, from home or inside the gym while its internet is up, first setting their own password on a gym device at the desk with a one-time code staff give them.
 - R38. Members receive a reminder by SMS or email shortly before their membership expires and again when it has expired, sent from the online copy only after its first update on or after the day the reminder comes due, so a reminder that comes due while the gym PC is off goes out after the PC next connects.
-- R43. Only the owner's sign-in and member sign-ins can read the online copy, and a signed-in member sees only their own code, expiry date, and visits.
+- R43. Only the owner's sign-in and member sign-ins can read the online copy, and a signed-in member sees only their own code, expiry date, visits, and the coaching sessions bought for them.
 
 ```mermaid
 flowchart TB
@@ -184,7 +186,7 @@ flowchart TB
 
 **Build order**
 
-- R39. The core (R1 through R28, plus R41, R42, R44, and R45 through R62) is finished and tested before any extra starts.
+- R39. The core (R1 through R28, plus R41, R42, R44, and R45 through R63) is finished and tested before any extra starts.
 - R40. Extras are built in this order and cut from the end if the semester runs short: owner insights R29 to R33, then cloud backup R34 with the owner half of R43, then owner view from home R35 and R36, then member logins R37 with the member half of R43, then expiry reminders R38.
 
 ### Key Flows
@@ -307,7 +309,6 @@ flowchart TB
 
 - For R38: whether reminders go by SMS, which costs per message, or by email, and how many days before expiry the first one goes out.
 - Which reports matter most to the owner, to confirm R28 with the client.
-- For R8 and R34: how the full Litestream replica leaves out the name, contact details, and photo of a member who declined the online backup, since Litestream copies the whole database file. One option is keeping those members' personal values in a separate local-only file that is never replicated. Settle before U16.
 - For R8 and R44: how members carried over from the logbook give their consent, since they were not present at registration; settle with the owner before go-live (U21).
 ### Sources
 
@@ -358,7 +359,7 @@ flowchart TB
   - The hosted service downloads the published file into a private staging file, checks its integrity, signature, and schema version, and swaps it in atomically. The gym PC signs each published file with a key the hosted service holds separately from any bucket credential, so a stolen bucket key alone cannot plant a file. "Last updated" is the newest heartbeat in that file, which the gym PC writes every five minutes.
   - The hosted service's own database keeps online-only records such as the reminder send log, so swaps never overwrite them. It rate-limits sign-ins, times out idle sessions, and ends a user's sessions when their password hash changes.
   - Bucket, host, and email or SMS provider keys never appear in committed files. The gym PC's services read them from environment variables loaded from the data folder, and the hosted service reads them from the host's secret settings.
-  - Member password hashes live on the gym PC and reach the online copy with the next publish. Consent recorded at registration under R8 decides what reaches the online copy: a member who declined it is published without name, contact details, photo, or password hash, like an erased member (R62).
+  - Member password hashes live on the gym PC and reach the online copy with the next publish. Consent recorded at registration under R8 decides what reaches the online copy: a member who declined it is published without name, contact details, photo, or password hash, like an erased member (R62). Because Litestream copies the whole database file, those members' name, contact details, and photo live in a separate local-only SQLite file in the data folder that Litestream never replicates and the photo upload skips; the pre-update copy (U20) still includes it, and the same migration runner manages both files.
 
   Governs R34, R35, R36, R37, R38, R43. (session-settled: user-approved — chosen over separate online member accounts: a member who forgets their password gets a new one-time code at the desk instead of resetting from home.)
 - KTD14. **The core starts with a thin working path, then splits into three parallel tracks.** The path is register a member, print their code, scan it at the door, and see the result on the desk screen. It proves camera scanning and the check-in rules on real hardware before the rest of the core builds on them. The contracts every track relies on are fixed before the tracks split: check-in kinds (U5), the payment entry contract (U6), settings and module schema files (U2), and the client navigation shell with its owner and staff screen groups (U3). Governs R39.
@@ -713,6 +714,7 @@ flowchart TB
 - **Execution note:** ships as four pull requests: passwords and sessions; the route guard, permission matrix and staff accounts; device pairing; the client navigation shell.
 - **Test scenarios:**
   - On an empty database with the setup secret, setup creates the owner and returns a recovery code, and a second setup attempt is refused.
+  - There is exactly one owner account: no route can create a second one or give a staff account the owner role.
   - A setup request from another device on the LAN is refused, including one that spoofs a forwarded address or the Host header.
   - A setup request sent from another website's origin is refused, and one without the setup secret is refused.
   - A correct password starts a session, and the sixth wrong password within 15 minutes is rate-limited, including after a server restart.
@@ -745,6 +747,7 @@ flowchart TB
   - Registering with a photo and consent creates a member with a code and a stored photo.
   - Registering without a photo succeeds, and the member record has no photo.
   - Registering without consent to storing data on the gym PC is refused, and registering without backup or reminder consent succeeds and records each answer separately.
+  - A member who declines the online backup has their name, contact details, and photo stored only in the local-only file, and the desk still shows them.
   - A renamed executable uploaded as a photo is refused, and a 12 MB image is refused.
   - A client-supplied photo file name containing `../` has no effect on where the file is saved.
   - A photo request without a session is refused.
@@ -878,7 +881,7 @@ flowchart TB
 ### U10. Products, stock, shakes, sales
 
 - **Goal:** Staff ring up sealed products and shakes with add-ons, stock counts move with every sale, void, and restock, and warnings appear before shelves run empty.
-- **Requirements:** R22, R23, R24, R25, R26; F4; AE6.
+- **Requirements:** R22, R23, R24, R25, R26, R63; F4; AE6.
 - **Dependencies:** U6.
 - **Files:** `packages/server/src/sales/products.service.ts`, `packages/server/src/sales/sales.service.ts`, `packages/server/src/sales/sales.routes.ts`, `packages/server/src/stock/stock-movements.ts`, `packages/server/src/stock/restock.service.ts`, `packages/domain/src/reports/sales-section.ts`, `packages/shared/src/schemas/sale.ts`, `packages/client/src/desk/SalePage.tsx`, `packages/client/src/owner/ProductsPage.tsx`, `packages/client/src/owner/RestockPage.tsx`, `packages/server/src/sales/sales.service.test.ts`, `packages/server/src/stock/stock-movements.test.ts`, `packages/client/src/desk/SalePage.test.tsx`
 - **Approach:**
@@ -886,8 +889,9 @@ flowchart TB
   2. Record every stock change as a movement record carrying its Manila date, and update the count in the same transaction as the movement, so the stock level on an earlier day can be recomputed for U11.
   3. Record a sale's line items and add-ons with price snapshots, its U6 payment, and its stock movements in one transaction, leaving shake ingredients untouched (R25).
   4. Let stock drop below zero when an item already at zero sells, shown as out of stock, so the next restock lands on the correct count (R23).
-  5. Provide sale void, sale back-entry, restock, and restock void operations against the KTD19 entry context. A void applies only when it changes exactly one not-yet-voided row, which makes a repeated void harmless.
-  6. Provide the sales section query for U11.
+  5. Provide owner-only stock count corrections that record the difference as a correction movement with its reason (R63).
+  6. Provide sale void, sale back-entry, restock, and restock void operations against the KTD19 entry context. A void applies only when it changes exactly one not-yet-voided row, which makes a repeated void harmless.
+  7. Provide the sales section query for U11.
 - **Test scenarios:**
   - Covers AE6. With 6 in stock and a low-stock level of 5, selling one leaves 5 and shows the low-stock warning.
   - A shake with banana and egg plus an energy drink records both add-ons, totals all prices, lowers energy-drink stock by one, and changes no ingredient stock.
@@ -897,6 +901,10 @@ flowchart TB
   - Voiding the same sale twice restores stock only once.
   - Voiding a restock lowers the count by its quantity.
   - A staff attempt to record a restock is refused.
+  - A restock saved without the amount paid is accepted, and one with it shows that cost in the purchase history.
+  - Correcting a count of 8 to 6 with the reason "breakage" records a movement of -2 with that reason, the owner's name, and the time, and the count still equals the sum of its movements.
+  - A staff attempt to correct a stock count is refused.
+  - A coaching sale without a member is refused, and the member's online view lists the coaching session on its date.
   - After a price change, earlier sale totals are unchanged.
 - **Verification:** A staff member rings up the F4 sale at the desk, and the stock count and warnings update on screen.
 
@@ -1035,7 +1043,8 @@ flowchart TB
   - With the gym PC online but idle overnight, the backup status is not shown as stale.
   - With no successful replication for 24 hours, the owner screen warns that the backup is stale.
   - After an erasure, the member's photos are gone from the bucket.
-  - A member who declined the online backup has no photo in the bucket.
+  - A member who declined the online backup has no photo in the bucket, and the replica holds no name or contact details for them.
+  - After a restore onto a replacement PC, a member who declined the online backup comes back without name, contact details, or photo, and staff re-enter them at the desk.
 - **Verification:** A restore onto another laptop, using the owner-held restore key, reproduces the members, payments, and a matching daily report.
 
 ### U17. Owner view from home
@@ -1074,7 +1083,7 @@ flowchart TB
   3. Have the publish job wrap each member's door code with a key derived from that member's password, using a different derivation from the sign-in verifier, and re-wrap it at the next publish after any desk password reset (KTD13).
   4. Unwrap the code in the hosted service only while handling that member's sign-in, hold it in their server-side session for that session alone, and never write it to the service's own database or logs.
   5. Give members no session on the gym PC: its only member route sets a password with a desk code, and members' phones never install the gym certificate authority (KTD3).
-  6. Limit a signed-in member on the hosted service to their own code, expiry, and visits, and add member requests to the KTD6 permission matrix on both servers (R43).
+  6. Limit a signed-in member on the hosted service to their own code, expiry, visits, and coaching sessions bought, and add member requests to the KTD6 permission matrix on both servers (R43).
   7. Handle a forgotten password with a new desk code.
 - **Test scenarios:**
   - A one-time code sets a password once, and reusing it or using an expired code is refused.
@@ -1203,7 +1212,7 @@ The root scripts come from U1, and the CI check runs on every pull request the t
 
 **Whole project**
 
-- Every core requirement (R1 through R28, R41, R42, R44, and R45 through R62) is traced to a merged unit whose tests pass.
+- Every core requirement (R1 through R28, R41, R42, R44, and R45 through R63) is traced to a merged unit whose tests pass.
 - The CI check passes on the main branch.
 - The permission matrix test covers every discovered API route, including the live feed and photo routes.
 - The real door tablet has scanned printed cards over the gym Wi-Fi with local HTTPS.

@@ -68,7 +68,7 @@ The gym PC holds the only live copy of the data. Devices at the gym reach it ove
 ## Progress
 
 - [x] Concept paper and client discussion
-- [x] Requirements: 62 requirements, 7 key flows, 16 acceptance examples
+- [x] Requirements: 63 requirements, 7 key flows, 16 acceptance examples
 - [x] Implementation plan: 22 units, reviewed
 - [x] Shared repository and team Git workflow
 - [ ] Phase 1: Foundation (U1 to U3, plus certificates and door tablet setup from U14). U1 is done, and U2a is in progress.
@@ -84,7 +84,6 @@ The gym PC holds the only live copy of the data. Devices at the gym reach it ove
 - Whether reminders go by SMS or email, and how many days before expiry (R38).
 - How members carried over from the logbook give consent for their data (R8, R44).
 - Which contact details members give: phone, email, or both (R8).
-- Whether restocks record what the gym paid, or only the quantity (R26).
 - The month-end renewal rule: a January 31 expiry renews to February 28, then back to March 31 (R55).
 - Whether the gym has a printer for the closing-time member list (R45).
 

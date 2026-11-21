@@ -45,9 +45,9 @@ Deimos designed 12 tables in PostgreSQL (pull requests #13, #14, and #18). The p
 | `plan` | plans (block 3) | Name, price, length | Store the price in centavos (KTD7). Store the length as a number and a unit, days or months (R6). Add a retired state. |
 | `payment` | payments (block 4) | Amount, method, reference number, staff | Store the amount in centavos. Change the methods from cash, GCash, and bank transfer to cash, GCash, and Maya (R27). Require the reference number only for e-wallet payments. Replace the status with the voided state. Add the payment kind: membership, day pass, or sale. Drop the coaching link. |
 | `check_in` | check-ins and rejections (block 5) | Member, time, staff | Refused scans (expired, duplicate) go in the rejections table (R58). Add the check-in kind, scan or override (KTD8), and where it came from, door or desk. A check-in can belong to a day pass instead of a member. Add a unique rule for once per day (AE15). |
-| `product` and `protein_powder` | products and add-ons (block 6) | Name, stock count, low-stock level, price | One products table with a type column: sealed item, or menu item for shakes and coaching. Add-ons (banana, egg) move from one text column to their own table with prices (R24). Ask the owner whether to keep the unit cost (block 6, question 6). |
+| `product` and `protein_powder` | products and add-ons (block 6) | Name, stock count, low-stock level, price | One products table with a type column: sealed item, or menu item for shakes and coaching. Add-ons (banana, egg) move from one text column to their own table with prices (R24). Keep the unit cost as an optional amount paid on each restock (decision log, block 6). |
 | `product_sale` | sales and sale lines (block 6) | Quantity, staff, time | A sale had one product. The plan's sale has lines, and each line keeps its own price snapshot and chosen add-ons. |
-| `stock_movement` | stock movements (block 6) | Almost everything | The reasons become restock, sale, and void. |
+| `stock_movement` | stock movements (block 6) | Almost everything | The reasons become restock, sale, void, and correction (R63). |
 | `coaching_package`, `coaching_enrollment`, `coaching_session` | None | Nothing | Left out: the plan moves trainer features to a later version. |
 
 **Tables the plan needs that the draft doesn't have yet:** membership ledger, rejections, door events, day passes, settings, system state, audit log, personal values, consent, sale lines, and add-ons.
@@ -199,7 +199,7 @@ Add to this list during the session.
 
 - Which contact details should members give: phone, email, or both?
 - For members carried over from the logbook, how do they give consent to storing their data (R8, R44)?
-- Should restocks record what the gym paid, or only the quantity?
+- ~~Should restocks record what the gym paid, or only the quantity?~~ Decided by the team: the amount paid is optional on each restock.
 - ~~Are GCash and Maya the only e-wallets customers use?~~ Answered: yes, the semi-manager confirmed GCash and Maya (Week 3 interview).
 
 ## Decision log
@@ -211,6 +211,11 @@ Add to this list during the session.
 | 3 | Is consent one yes/no or three? (question 8) | Three separate answers. Storing data on the gym PC is required; the online backup and reminders are each optional. | Team decision. A member who declines the backup keeps every gym PC feature but gets no member login or reminders, because those run from the online copy (R8). |
 | 4 | Which payment methods exist? | Cash, GCash, and Maya. | R27, and the semi-manager confirmed GCash and Maya in the Week 3 interview. |
 | 6 | Where does coaching go? | Coaching is sold as a menu item with no stock count, like a shake without add-ons. The product type is either sealed item or menu item. | The semi-manager asked for coaching, and the plan postpones trainer features. Selling it as a menu item records the income without new tables. |
+| 2 | Can there be more than one owner account? (question 4) | No. Exactly one owner account, used only by the owner. Nothing can add a second owner or give a staff account the owner role. | Team decision. |
+| 3 | Where do the personal details of a member who declines the online backup live? | In a separate local-only SQLite file in the data folder. Litestream never replicates it and the photo upload skips those members. | Litestream copies the whole database file and cannot leave out one member. After a restore, staff re-enter those members' details. |
+| 6 | Can stock counts be corrected? (question 4) | Yes. The owner corrects a count to what is on the shelf with a reason (breakage, spoiled, miscount, other), saved as a correction movement (R63). | Counts drift through breakage, spoilage, and theft, and voiding a sale is the wrong tool for that. |
+| 6 | Do restocks record what the gym paid? (question 6) | Optionally. Each restock has an amount-paid field the owner may leave blank. The Inventory screen shows the last unit cost when one is known. | Costs nothing to store, builds the purchase history R26 asks for, and works whatever the owner prefers. |
+| 6 | Is a coaching sale tied to a member? | Yes. A coaching sale records the member it is for, and the member's online view lists their coaching sessions (R24, R43). | The owner asked for coaching in the Week 3 interview; this shows it to members without building trainer features. |
 
 ## Still open
 
@@ -218,4 +223,3 @@ Add to this list during the session.
 |---|---|---|
 | Which contact details should members give: phone, email, or both? | Team, with the owner | Before U4 |
 | For members carried over from the logbook, how do they give consent (R8, R44)? | Team, with the owner | Before go-live (U21) |
-| Should restocks record what the gym paid, or only the quantity? | Team, with the owner | Before U10 |
