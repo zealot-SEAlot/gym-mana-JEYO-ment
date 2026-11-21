@@ -2,8 +2,8 @@
 
 A web app for Jeyo's Hardhit Fitness Center that replaces its logbooks, wall list, and hand-counted stock. It runs on the gym's own PC, so check-ins, payments, and sales keep working when the internet is down.
 
-> **Status (September 16, 2026): the code workspace and pull request checks (U1) are in place, but no gym features exist yet.**
-> The next step is **U2**, the server foundation.
+> **Status (November 22, 2026): the code workspace and pull request checks (U1) are in place, and U2a (database, time and money helpers) is in progress. The team settled the database design in the schema session ([decision log](docs/sessions/u2a-schema-session.md#decision-log)). No gym features exist yet.**
+> The next step is writing the schema from that decision log (U2a step 5), then the rest of **U2**, the server foundation.
 > Everything below describes what the plan says the system *will* do.
 
 ## The problem
@@ -21,7 +21,7 @@ A web app for Jeyo's Hardhit Fitness Center that replaces its logbooks, wall lis
 - Members on owner-defined plans (Monthly, Student Monthly, 3-Month, and so on), with color-coded status: active, expiring soon, or expired.
 - QR check-in at a door tablet. Each member code works once per day, the screen shows the member's photo, and staff can override at the desk.
 - Walk-ins pay first and get a one day QR code pass.
-- Product and shake sales with stock counts, low-stock warnings, and add-ons such as banana or egg.
+- Product, shake, and coaching sales on a tap-to-add screen, with stock counts, low-stock warnings, and add-ons such as banana or egg.
 - Cash, GCash, and Maya payments, with e-wallet reference numbers.
 - A daily report for closing out the cash drawer and GCash/Maya history.
 - Owner corrections, a printed member list and paper log for power outages, and separate owner and staff accounts.
@@ -71,7 +71,7 @@ The gym PC holds the only live copy of the data. Devices at the gym reach it ove
 - [x] Requirements: 62 requirements, 7 key flows, 16 acceptance examples
 - [x] Implementation plan: 22 units, reviewed
 - [x] Shared repository and team Git workflow
-- [ ] Phase 1: Foundation (U1 to U3, plus certificates and door tablet setup from U14). U1 is done.
+- [ ] Phase 1: Foundation (U1 to U3, plus certificates and door tablet setup from U14). U1 is done, and U2a is in progress.
 - [ ] Phase 2: Thin working path, from registering a member to a door scan showing on the desk (U4, U5, U6, U22)
 - [ ] Phase 3: Parallel tracks, one teammate each: members (U7, U8), check-in (U9), sales (U10)
 - [ ] Phase 4: Daily report, outage support, corrections, releases (U11 to U13, U20, rest of U14)
@@ -83,6 +83,8 @@ The gym PC holds the only live copy of the data. Devices at the gym reach it ove
 - What the daily report must show (R28).
 - Whether reminders go by SMS or email, and how many days before expiry (R38).
 - How members carried over from the logbook give consent for their data (R8, R44).
+- Which contact details members give: phone, email, or both (R8).
+- Whether restocks record what the gym paid, or only the quantity (R26).
 - The month-end renewal rule: a January 31 expiry renews to February 28, then back to March 31 (R55).
 - Whether the gym has a printer for the closing-time member list (R45).
 

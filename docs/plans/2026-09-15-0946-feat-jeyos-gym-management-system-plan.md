@@ -94,7 +94,7 @@ Trainers are not actors in this version (see Scope Boundaries).
 
 - R6. The owner creates and edits membership plans, each with a name, price, and a length in days or months (for example Monthly, Student Monthly, 3-Month), and sets the walk-in day-pass price.
 - R7. Changing a plan's price does not change amounts recorded on past payments.
-- R8. Staff register a member with name, contact details, and a photo, recording the member's consent to storing that data on the gym PC, keeping an online backup copy, and receiving expiry reminders; a member who declines a photo can still register.
+- R8. Staff register a member with name, contact details, and a photo, recording the member's consent to storing that data on the gym PC, keeping an online backup copy, and receiving expiry reminders; a member who declines a photo can still register. Consent to storing data on the gym PC is required; the online backup copy and reminders are each optional. A member who declines the online copy keeps every gym PC feature but has no member login (R37) and gets no reminders (R38), because both run from the online copy.
 - R9. Each member gets a unique, unguessable QR code that staff can print on a card or send to the member as an image, and staff can replace it with a new code that makes the old one invalid at the door.
 - R10. The member list marks each member's status with a color: active, expiring soon (7 days or fewer left), or expired.
 - R11. A renewal paid on or before the expiry date extends from the old expiry date; a renewal paid after expiry starts on the payment date.
@@ -307,6 +307,7 @@ flowchart TB
 
 - For R38: whether reminders go by SMS, which costs per message, or by email, and how many days before expiry the first one goes out.
 - Which reports matter most to the owner, to confirm R28 with the client.
+- For R8 and R34: how the full Litestream replica leaves out the name, contact details, and photo of a member who declined the online backup, since Litestream copies the whole database file. One option is keeping those members' personal values in a separate local-only file that is never replicated. Settle before U16.
 - For R8 and R44: how members carried over from the logbook give their consent, since they were not present at registration; settle with the owner before go-live (U21).
 ### Sources
 
@@ -357,7 +358,7 @@ flowchart TB
   - The hosted service downloads the published file into a private staging file, checks its integrity, signature, and schema version, and swaps it in atomically. The gym PC signs each published file with a key the hosted service holds separately from any bucket credential, so a stolen bucket key alone cannot plant a file. "Last updated" is the newest heartbeat in that file, which the gym PC writes every five minutes.
   - The hosted service's own database keeps online-only records such as the reminder send log, so swaps never overwrite them. It rate-limits sign-ins, times out idle sessions, and ends a user's sessions when their password hash changes.
   - Bucket, host, and email or SMS provider keys never appear in committed files. The gym PC's services read them from environment variables loaded from the data folder, and the hosted service reads them from the host's secret settings.
-  - Member password hashes live on the gym PC and reach the online copy with the next publish. Consent recorded at registration under R8 covers the online copy.
+  - Member password hashes live on the gym PC and reach the online copy with the next publish. Consent recorded at registration under R8 decides what reaches the online copy: a member who declined it is published without name, contact details, photo, or password hash, like an erased member (R62).
 
   Governs R34, R35, R36, R37, R38, R43. (session-settled: user-approved — chosen over separate online member accounts: a member who forgets their password gets a new one-time code at the desk instead of resetting from home.)
 - KTD14. **The core starts with a thin working path, then splits into three parallel tracks.** The path is register a member, print their code, scan it at the door, and see the result on the desk screen. It proves camera scanning and the check-in rules on real hardware before the rest of the core builds on them. The contracts every track relies on are fixed before the tracks split: check-in kinds (U5), the payment entry contract (U6), settings and module schema files (U2), and the client navigation shell with its owner and staff screen groups (U3). Governs R39.
@@ -718,6 +719,7 @@ flowchart TB
   - A session idle past the timeout must sign in again on its next request.
   - A desk with an open feed and automatic reloads is still signed out once the idle timeout passes.
   - A disabled staff account cannot sign in, and its name still shows on a payment it recorded earlier.
+  - Adding a staff account with a sign-in name already in use, including a disabled account's, is refused.
   - The recovery code resets the owner password once on the gym PC, ends every owner session, and is refused on reuse.
   - The sixth wrong one-time code attempt is rate-limited, and an expired code is refused.
   - A valid pairing code returns a device token cookie, and a revoked tablet's next scan request is refused.
@@ -742,7 +744,7 @@ flowchart TB
 - **Test scenarios:**
   - Registering with a photo and consent creates a member with a code and a stored photo.
   - Registering without a photo succeeds, and the member record has no photo.
-  - Registering without consent is refused.
+  - Registering without consent to storing data on the gym PC is refused, and registering without backup or reminder consent succeeds and records each answer separately.
   - A renamed executable uploaded as a photo is refused, and a 12 MB image is refused.
   - A client-supplied photo file name containing `../` has no effect on where the file is saved.
   - A photo request without a session is refused.
@@ -1023,7 +1025,7 @@ flowchart TB
 - **Approach:**
   1. Run Litestream as a second NSSM service replicating to the replica prefix with the KTD13 key and retention rules, reading its keys from environment variables loaded from the data folder.
   2. Write the heartbeat row every five minutes, and read the last successful replication from Litestream's metrics for the status screen.
-  3. Upload new and changed photos on a schedule, and delete an erased member's photos as current objects when U8 queues them, leaving their old versions to expire after 14 days.
+  3. Upload new and changed photos on a schedule, only for members who consented to the online backup (R8), and delete an erased member's photos as current objects when U8 queues them, leaving their old versions to expire after 14 days.
   4. Write the restore procedure for a replacement PC using the owner-held restore key, including starting fresh replication after a restore or rollback.
 - **Execution note:** Prove it with a real restore onto a second machine, not just a successful upload.
 - **Test scenarios:**
@@ -1033,6 +1035,7 @@ flowchart TB
   - With the gym PC online but idle overnight, the backup status is not shown as stale.
   - With no successful replication for 24 hours, the owner screen warns that the backup is stale.
   - After an erasure, the member's photos are gone from the bucket.
+  - A member who declined the online backup has no photo in the bucket.
 - **Verification:** A restore onto another laptop, using the owner-held restore key, reproduces the members, payments, and a matching daily report.
 
 ### U17. Owner view from home
@@ -1050,6 +1053,7 @@ flowchart TB
 - **Test scenarios:**
   - Covers AE9. With the newest heartbeat at 4:10 PM, the view shows "last updated 4:10 PM" and omits a 6:00 PM renewal until a newer copy arrives.
   - The published database has no staff, session, device, one-time code, recovery, audit, or payment detail tables, and each member's expiry in it matches the gym PC's replay.
+  - A member who declined the online backup appears in the published file without name, contact details, photo, or password hash.
   - A published file with a newer schema version than the service expects is not swapped in, and the previous copy keeps serving with a stale notice.
   - The owner signs in with the gym password, and a staff account is refused.
   - The sixth wrong online password within 15 minutes is rate-limited.

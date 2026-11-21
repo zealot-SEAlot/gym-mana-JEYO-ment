@@ -208,6 +208,7 @@ Add to this list during the session.
 |---|---|---|---|
 | All | Do we use Deimos's tables as the schema? | Yes. The whole team accepted the starting draft above, with every change in its right-hand column, as the final schema design. | The draft covers Deimos's design and the plan's rules in one place, and the team agreed on it. |
 | 2 | How do owner and staff sign in? | With a sign-in name and password, not an email address. The accounts table gets a unique sign-in name column. | Setup and sign-in happen on the gym PC and the gym Wi-Fi without internet, so no email can be sent or checked. A forgotten password is reset with the recovery code (R49) or by the owner (R50). |
+| 3 | Is consent one yes/no or three? (question 8) | Three separate answers. Storing data on the gym PC is required; the online backup and reminders are each optional. | Team decision. A member who declines the backup keeps every gym PC feature but gets no member login or reminders, because those run from the online copy (R8). |
 | 4 | Which payment methods exist? | Cash, GCash, and Maya. | R27, and the semi-manager confirmed GCash and Maya in the Week 3 interview. |
 | 6 | Where does coaching go? | Coaching is sold as a menu item with no stock count, like a shake without add-ons. The product type is either sealed item or menu item. | The semi-manager asked for coaching, and the plan postpones trainer features. Selling it as a menu item records the income without new tables. |
 
