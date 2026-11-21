@@ -25,7 +25,7 @@ Jeyo's Hardhit Fitness Center gym management system, a three-student capstone. T
 | `npm run dev --workspace @jeyos/client` | Vite development server |
 | `npm run dev --workspace @jeyos/server` | Run the server with Node, restarting on save |
 
-CI (`.github/workflows/ci.yml`) runs on every pull request: typecheck, lint, format check, coverage, build, the Playwright tests, and `npm audit` on Windows, plus a gitleaks secret scan and a check that blocks binary files outside `e2e/fixtures/`.
+CI (`.github/workflows/ci.yml`) runs on every pull request: typecheck, lint, format check, coverage, build, the Playwright tests, and `npm audit` on Windows, plus a gitleaks secret scan and checks that block binary files outside `e2e/fixtures/` and SQL files outside `packages/server/src/db/migrations/`.
 
 ## Layout
 

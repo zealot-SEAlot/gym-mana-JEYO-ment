@@ -14,7 +14,7 @@ A web app for Jeyo's Hardhit Fitness Center that replaces its logbooks, wall lis
 - The owner has no current view of who has paid, who trained today, or what sold.
 - The gym's internet drops, and check-in has to keep working when it does.
 
-## What it will do?
+## What it will do
 
 **Core** (built and tested first)
 
@@ -168,7 +168,7 @@ If you use VS Code, install the recommended extensions when it offers them, and 
 | `npm run dev --workspace @jeyos/client` | Opens the screens with live reload (a placeholder page for now) |
 | `npm run dev --workspace @jeyos/server` | Runs the server and restarts it on save (a placeholder for now) |
 
-Every pull request runs the same checks on GitHub on Windows, plus a dependency audit, a secret scan, and a check that no photos or other binary files were added. Run `npm run typecheck`, `npm run lint`, and `npm test` before asking for review.
+Every pull request runs the same checks on GitHub on Windows, plus a dependency audit, a secret scan, and a check that no photos, other binary files, or database dumps were added. Run `npm run typecheck`, `npm run lint`, and `npm test` before asking for review.
 
 ## Contributing
 

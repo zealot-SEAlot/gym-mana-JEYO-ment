@@ -64,3 +64,16 @@ jobs:
             exit 1
           fi
           echo "No binary files outside e2e/fixtures/."
+      - name: Block SQL files outside the migrations folder
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Drizzle writes the only SQL the repo needs; a database dump can hold member data
+          sql_files=$(git diff --name-only --no-renames --diff-filter=d "origin/$BASE_REF...HEAD" \
+            | grep -i '\.sql$' | grep -v '^packages/server/src/db/migrations/' || true)
+          if [ -n "$sql_files" ]; then
+            echo "::error::SQL files belong only in packages/server/src/db/migrations/. Never commit database dumps or backups."
+            printf '%s\n' "$sql_files"
+            exit 1
+          fi
+          echo "No SQL files outside packages/server/src/db/migrations/."

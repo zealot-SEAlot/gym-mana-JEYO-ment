@@ -63,7 +63,9 @@ Trainers are not actors in this version (see Scope Boundaries).
 - **Payments are cash or GCash/Maya, with the e-wallet reference number typed in by staff.** Governs R27. (session-settled: user-directed — chosen over cash only and over automatic online payment confirmation: works offline and needs no payment-provider verification or fees.)
 - **The AI feature is offline owner insights: renewal-risk alerts and stock run-out predictions.** Governs R29, R30, R31, R32, R33. (session-settled: user-directed — chosen over a face check at the door, which the user dropped, and over logbook-page scanning, an ask-your-gym assistant, and a busy-hours forecast: runs without internet and protects renewal and sales income.)
 - **All extras stay planned and are built after the core in a fixed cut order.** Governs R39, R40. (session-settled: user-directed — chosen over a fixed smaller first version of core, insights, backup, and owner remote view: the team wants the full scope, accepting that the demo scope is settled late.)
-- **Trainer features wait for a later version.** (session-settled: user-directed — chosen over trainer client lists with paid sessions, a view-only client list, and full coaching tools: keeps the first version on the problems from the client discussion.)
+- **Trainer features wait for a later version.** (session-settled: user-directed — chosen over trainer client lists with paid sessions, a view-only client list, and full coaching tools: keeps the first version on the problems from the client discussion.) The semi-manager asked for coaching in the Week 3 interview, both monthly and per session. Until trainer features are built, the owner sells coaching as priced menu items with no stock count, so coaching income still reaches payments and the daily report (R24, R27).
+- **Owner and staff sign in with a sign-in name and password, not an email address.** Governs R3, R49, R50. Setup and sign-in happen on the gym PC and the gym Wi-Fi, where no email can be sent or checked, and a forgotten password is reset with the owner's recovery code (R49) or by the owner (R50). (session-settled: team schema session, U2a.)
+- **Walk-ins pay at the desk before they get a pass.** Governs R19, R20. There is no self-service walk-in form: the Week 3 staff interview confirmed that unpaid walk-ins are the problem, and a form on the online service would let people in before paying and would stop working when the internet drops.
 - **Early renewals extend from the old expiry date; late renewals start on the payment date.** Members who renew early lose no days. Governs R11.
 - **Members use their own phones only through the online service.** Members set their password on a gym device at the desk and view their code, expiry, and visits online, which also works inside the gym while its internet is up. Governs R37, R43. (session-settled: user-directed — chosen over member phones reaching the gym PC over the gym Wi-Fi and over no member self-view in this version: members' phones never show certificate warnings and never need the gym's certificate authority.)
 - **A monthly renewal after a month-end clamp returns to the member's original day.** An expiry of January 31 renews to February 28, then to March 31. Governs R55. (session-settled: user-directed — chosen over staying on the clamped day: a member whose expiry falls on the 29th to 31st does not lose days every year.)
@@ -269,6 +271,8 @@ flowchart TB
 **Outside this product's identity**
 
 - Coaching tools such as workout plans and progress notes; the product runs the gym's front desk and business, not members' training.
+- Receipts: the system records every sale and payment but does not issue receipts, printed or electronic, because an app receipt is not a BIR official receipt and the semi-manager raised it only as a question (Week 3 interview).
+- Barcode or QR scanning of products at the sales screen; staff tap items in a catalog instead (U10).
 - Face recognition at the door, which the team dropped; the photo shown on the door screen (R14) is the anti-sharing check.
 - Other AI features considered and not chosen: logbook-page scanning, an ask-your-gym assistant, and a busy-hours forecast.
 
@@ -286,7 +290,7 @@ flowchart TB
 - The working system is due in one semester, about 4 months, built by a three-member team.
 - The course mandates no programming language or framework; planning chooses one with the team's skills in mind.
 - The three-member team commits, pulls, and pushes the code themselves; planning should not rely on an automated agent committing code or opening pull requests.
-- Customers send GCash and Maya payments only to an account the owner controls, so the owner can match e-wallet payments against its transaction history.
+- Customers send GCash and Maya payments only to an account the owner controls, so the owner can match e-wallet payments against its transaction history. The semi-manager confirmed GCash and Maya as the e-wallets the gym takes (Week 3 interview).
 - The gym has, or will get, a printer for the closing-time member list in R45.
 - Report contents in R28 are inferred from the client discussion and have not been confirmed with the owner.
 - The month-end renewal rule in R55 is the team's choice and has not been confirmed with the owner.
@@ -307,6 +311,7 @@ flowchart TB
 ### Sources
 
 - Team concept paper, "Initial Project Concept: Jeyo's Gym Management System" (Casas, Amatiaga, Maglasang), kept outside the repo: the client discussion problems, the once-per-day QR rule, and the offline check-in requirement.
+- Week 3 staff interview and semi-manager interview with prototype walkthrough (Bisaya transcripts, kept outside the repo): unpaid walk-ins confirmed as a problem, GCash and Maya confirmed, coaching requested, a tap-to-add sales screen requested, and sign-in without internet raised as a concern.
 - Philippine Data Privacy Act of 2012 (Republic Act No. 10173): the basis for consent at registration.
 
 ---
@@ -654,7 +659,7 @@ flowchart TB
   1. Create the five workspaces from KTD16 and pin Node 24 LTS.
   2. Pin Drizzle, TypeScript, and other fast-moving packages to exact versions, and confirm TypeScript 7 works with Vite, Vitest, and ESLint before settling on it.
   3. Add root scripts `typecheck`, `lint`, `test`, `test:coverage`, `test:e2e`, and `build`, and a lint rule that bans rendering raw HTML.
-  4. Add a CI workflow on `pull_request` that installs, type-checks, lints, tests with coverage at or above 80 percent, runs `npm audit` at moderate and above, and fails when the schema and migrations drift apart (KTD17), a secret scan finds a committed key, or an image or other binary file is added outside `e2e/fixtures`.
+  4. Add a CI workflow on `pull_request` that installs, type-checks, lints, tests with coverage at or above 80 percent, runs `npm audit` at moderate and above, and fails when the schema and migrations drift apart (KTD17), a secret scan finds a committed key, an image or other binary file is added outside `e2e/fixtures`, or a SQL file is added outside `packages/server/src/db/migrations` (a database dump can hold member data).
   5. Ignore the database file, photo folder, certificates, environment files, and build output in `.gitignore`.
 - **Execution note:** Mostly scaffolding; prove it with one run of each root script on a Windows machine and a green check on the team's first pull request.
 - **Test expectation:** none -- scaffolding; one placeholder test per package proves the runners are wired.
@@ -700,7 +705,7 @@ flowchart TB
 - **Approach:**
   1. Serve setup only while no owner exists, only to connections from the gym PC's own address, and only with the data-folder setup secret, per KTD5 (R49).
   2. Build sessions, password hashing, CSRF protection, stored rate limits, and one-time codes per KTD5, with the idle timeout read from settings (R52), counting only requests the user starts as activity so the open feed and automatic reloads never extend a session (KTD10).
-  3. Let the owner add, disable, and reset staff, keeping disabled accounts linked to their past records (R50).
+  3. Let the owner add, disable, and reset staff, each with a unique sign-in name, keeping disabled accounts linked to their past records (R50).
   4. Pair and revoke the door tablet with one-time codes and a hashed device token in an `HttpOnly` cookie, and show each device's last scan time and address (R51).
   5. Declare roles on each route definition and let the guard deny undeclared routes, with the matrix test discovering routes from the router (KTD6).
   6. Build the client navigation shell with the owner and staff screen groups and the KTD20 responsive convention, so every track adds its screens into it (KTD14).
@@ -875,7 +880,7 @@ flowchart TB
 - **Dependencies:** U6.
 - **Files:** `packages/server/src/sales/products.service.ts`, `packages/server/src/sales/sales.service.ts`, `packages/server/src/sales/sales.routes.ts`, `packages/server/src/stock/stock-movements.ts`, `packages/server/src/stock/restock.service.ts`, `packages/domain/src/reports/sales-section.ts`, `packages/shared/src/schemas/sale.ts`, `packages/client/src/desk/SalePage.tsx`, `packages/client/src/owner/ProductsPage.tsx`, `packages/client/src/owner/RestockPage.tsx`, `packages/server/src/sales/sales.service.test.ts`, `packages/server/src/stock/stock-movements.test.ts`, `packages/client/src/desk/SalePage.test.tsx`
 - **Approach:**
-  1. Keep sealed items with a stock count and low-stock level, and shakes as menu items with priced add-ons (R22, R24).
+  1. Keep sealed items with a stock count and low-stock level, and shakes and coaching as menu items, shakes with priced add-ons (R22, R24). The sales screen is a catalog of item tiles that staff tap to add, so a sale takes a few taps and no typing.
   2. Record every stock change as a movement record carrying its Manila date, and update the count in the same transaction as the movement, so the stock level on an earlier day can be recomputed for U11.
   3. Record a sale's line items and add-ons with price snapshots, its U6 payment, and its stock movements in one transaction, leaving shake ingredients untouched (R25).
   4. Let stock drop below zero when an item already at zero sells, shown as out of stock, so the next restock lands on the correct count (R23).
