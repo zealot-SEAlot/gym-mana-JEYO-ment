@@ -86,7 +86,7 @@ Trainers are not actors in this version (see Scope Boundaries).
 - R46. After a power outage, staff can enter paper-logged check-ins, payments, and sales with their original times, and each entry is marked as entered after the outage with the staff account that entered it.
 - R48. A record entered after an outage counts at its original time for renewal dating (R11) and the once-per-day rule (R15), and staff can back-enter only the last 24 hours, with anything older requiring the owner.
 - R49. On a fresh install, a setup screen that works only on the gym PC itself creates the owner account and prints a one-time recovery code for resetting the owner password without internet.
-- R50. The owner adds, disables, and resets staff accounts, and a disabled account can no longer sign in but keeps its name on past records.
+- R50. The owner adds, disables, and resets staff accounts, and a disabled account can no longer sign in but keeps its name on past records. If the owner renames an account, past records keep the name it had when they were entered.
 - R51. The owner pairs the door tablet with a one-time code, and revoking it (R42) ends its access immediately.
 - R52. An owner or staff sign-in ends after a period of inactivity, so a shift change does not leave records under the previous person's account.
 - R56. The gym PC's clock, in Manila time, defines the calendar day for check-ins, day passes, expiry dates, and the daily report.
@@ -675,7 +675,7 @@ flowchart TB
 - **Files:** `packages/server/src/app.ts`, `packages/server/src/https.ts`, `packages/server/src/config.ts`, `packages/server/src/db/client.ts`, `packages/domain/src/schema/index.ts`, `packages/server/drizzle.config.ts`, `packages/server/src/db/migrations/`, `packages/server/src/settings/settings.ts`, `packages/server/src/audit/audit-log.ts`, `packages/server/src/http/errors.ts`, `packages/server/src/http/validate.ts`, `packages/server/src/http/security-headers.ts`, `packages/server/src/http/clock-guard.ts`, `packages/shared/src/time.ts`, `packages/shared/src/money.ts`, `packages/shared/src/time.test.ts`, `packages/shared/src/money.test.ts`, `packages/server/src/db/client.test.ts`, `packages/server/src/settings/settings.test.ts`, `packages/server/src/audit/audit-log.test.ts`, `packages/server/src/http/security-headers.test.ts`, `packages/server/src/http/clock-guard.test.ts`, `packages/server/src/app.test.ts`
 - **Approach:**
   1. Open SQLite with the KTD2 settings on every connection, and set up the module schema index in `packages/domain/src/schema` with no cascading deletes. One foundation migration creates every core table (members, membership ledger, plans, payments, check-ins, rejections, door events, day passes, products, stock movements, sales, settings, audit), so the Phase 3 tracks add code and indexes rather than competing migrations (KTD17).
-  2. Define the shared record columns from KTD7: original time, entry time, Manila date, entry mode, and voided state.
+  2. Define the shared record columns from KTD7: original time, entry time, Manila date, entry mode, and voided state, plus the account that entered the record and a copy of that account's name at the time (R50).
   3. Build the KTD18 settings table with typed, module-registered keys.
   4. Mount the API under `/api`, serve the built client, and add the single-page fallback route, all over HTTPS with certificate paths from config and TLS 1.2 as the minimum version (KTD3).
   5. Send a strict content security policy, `frame-ancestors 'none'`, HSTS, and no-store caching on `/api`, and set session cookies `Secure`, `HttpOnly`, and `SameSite=Strict`.
@@ -722,6 +722,7 @@ flowchart TB
   - A desk with an open feed and automatic reloads is still signed out once the idle timeout passes.
   - A disabled staff account cannot sign in, and its name still shows on a payment it recorded earlier.
   - Adding a staff account with a sign-in name already in use, including a disabled account's, is refused.
+  - After the owner renames Lee to Lee Santos, a payment Lee recorded earlier still shows "Lee", and a new payment shows "Lee Santos".
   - The recovery code resets the owner password once on the gym PC, ends every owner session, and is refused on reuse.
   - The sixth wrong one-time code attempt is rate-limited, and an expired code is refused.
   - A valid pairing code returns a device token cookie, and a revoked tablet's next scan request is refused.
