@@ -6,7 +6,7 @@ import type { AccountRole } from "@jeyos/shared";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
-import { api, ApiError, setCsrfToken } from "../api.ts";
+import { api, setCsrfToken } from "../api.ts";
 import { errorMessage, fieldErrorsOf, TextField } from "../forms.tsx";
 import type { FieldErrors } from "../forms.tsx";
 
@@ -14,16 +14,6 @@ import type { FieldErrors } from "../forms.tsx";
 export interface SignedIn {
   displayName: string;
   role: AccountRole;
-}
-
-// The server gives one answer for a wrong name, a wrong password, and a disabled account (R50), so
-// the screen can't say which one it was either
-function messageFor(error: unknown): string {
-  if (error instanceof ApiError && error.code === "too_many_tries") {
-    const minutes = Math.ceil((error.retryAfterSeconds ?? 60) / 60);
-    return `Too many wrong passwords. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
-  }
-  return errorMessage(error, { wrong_sign_in: "Wrong sign-in name or password." });
 }
 
 export function LoginPage({ onSignedIn }: { onSignedIn: (signedIn: SignedIn) => void }) {
@@ -54,7 +44,9 @@ export function LoginPage({ onSignedIn }: { onSignedIn: (signedIn: SignedIn) => 
       setCsrfToken(answer.csrfToken);
       onSignedIn({ displayName: answer.displayName, role: answer.role });
     } catch (error) {
-      setFormError(messageFor(error));
+      // The server gives one answer for a wrong name, a wrong password, and a disabled account
+      // (R50), so the screen can't say which one it was either
+      setFormError(errorMessage(error, { wrong_sign_in: "Wrong sign-in name or password." }));
       // The sign-in name stays so a typo in the password is quick to retry
       setPassword("");
     } finally {

@@ -15,6 +15,11 @@ export function errorMessage(error: unknown, words: Partial<Record<string, strin
     if (sentence !== undefined) {
       return sentence;
     }
+    // Sign-in names, recovery codes, and pairing codes all lock for a while after five wrong tries
+    if (error.code === "too_many_tries") {
+      const minutes = Math.ceil((error.retryAfterSeconds ?? 60) / 60);
+      return `Too many wrong tries. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+    }
     if (error.code === "server_unreachable") {
       return "Can't reach the gym PC. Check that it is on and that this device is on the gym Wi-Fi.";
     }

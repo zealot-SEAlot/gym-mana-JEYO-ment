@@ -92,7 +92,7 @@ describe("LoginPage", () => {
     expect(onSignedIn).not.toHaveBeenCalled();
   });
 
-  it("says how many minutes to wait after too many wrong passwords", async () => {
+  it("says how many minutes to wait after too many wrong tries", async () => {
     fetchMock.mockResolvedValueOnce(
       answer(429, { error: "too_many_tries" }, { "Retry-After": "540" }),
     );
@@ -102,7 +102,7 @@ describe("LoginPage", () => {
     signIn();
 
     expect((await screen.findByRole("alert")).textContent).toBe(
-      "Too many wrong passwords. Try again in 9 minutes.",
+      "Too many wrong tries. Try again in 9 minutes.",
     );
   });
 

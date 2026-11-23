@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 
 import "./app/app.css";
-import { AppShell } from "./app/AppShell.tsx";
+import { App } from "./app/App.tsx";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -14,7 +14,7 @@ createRoot(rootElement).render(
   <StrictMode>
     {/* Reads the address bar, so each screen has its own address and the back button works (KTD20) */}
     <BrowserRouter>
-      <AppShell />
+      <App />
     </BrowserRouter>
   </StrictMode>,
 );
