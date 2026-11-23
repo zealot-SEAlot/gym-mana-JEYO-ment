@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, ApiError, setCsrfToken } from "./api.ts";
+import { api, ApiError, setCsrfToken, setSignedOutHandler } from "./api.ts";
 
 // Stands in for the server: each test says what fetch answers, then reads what was sent
 const fetchMock = vi.fn<typeof fetch>();
@@ -108,6 +108,24 @@ describe("api", () => {
       status: 502,
       code: "server_error",
     });
+  });
+
+  it("tells the shell when the session has ended, and still throws", async () => {
+    const signedOut = vi.fn();
+    setSignedOutHandler(signedOut);
+    fetchMock.mockResolvedValue(json(401, { error: "signed_out" }));
+
+    await expect(api("/staff", { userStarted: true })).rejects.toMatchObject({
+      code: "signed_out",
+    });
+    expect(signedOut).toHaveBeenCalledOnce();
+
+    // A wrong password is also a 401, but the session didn't end
+    signedOut.mockClear();
+    fetchMock.mockResolvedValue(json(401, { error: "wrong_sign_in" }));
+    await api("/auth/sign-in", { method: "POST", userStarted: true }).catch(() => undefined);
+    expect(signedOut).not.toHaveBeenCalled();
+    setSignedOutHandler(() => undefined);
   });
 
   it("says the server is unreachable when no answer comes back", async () => {

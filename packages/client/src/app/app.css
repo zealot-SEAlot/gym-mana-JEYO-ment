@@ -1,0 +1,202 @@
+/*
+ * The one stylesheet for every screen (KTD20). Vite bundles it into a file served from the gym PC,
+ * which the content security policy allows; inline <style> tags and style="" attributes it doesn't.
+ *
+ * The responsive convention: from 640 pixels wide the menu sits on the left of the screen; below
+ * that, on phones, it sits above it. Dense screens (daily report, corrections, sales) put each part
+ * in a <details> inside a .sections box: side by side on wide screens, stacked and collapsible on
+ * phones, instead of a wide table.
+ */
+
+:root {
+  --text: #1a1a1a;
+  --muted: #5c5c5c;
+  --background: #ffffff;
+  --panel: #f3f4f6;
+  --line: #d4d4d8;
+  --accent: #b91c1c;
+  --error: #b91c1c;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--background);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #f4f4f5;
+    --muted: #a1a1aa;
+    --background: #18181b;
+    --panel: #27272a;
+    --line: #3f3f46;
+    --accent: #f87171;
+    --error: #fca5a5;
+  }
+}
+
+body {
+  margin: 0;
+}
+
+/* Forms: one field per row, full width on phones */
+form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 24rem;
+}
+
+label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+input,
+button {
+  font: inherit;
+  /* At least 44 pixels tall, so a finger can hit it on a phone */
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  color: inherit;
+  background: var(--background);
+}
+
+button {
+  cursor: pointer;
+  background: var(--panel);
+}
+
+button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.field-error,
+[role="alert"] {
+  margin: 0;
+  color: var(--error);
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The sign-in screen and the loading message, before the shell exists */
+body > #root > main,
+.loading {
+  padding: 1rem;
+}
+
+/* The shell: header across the top, menu on the left, screen on the right */
+.shell {
+  display: grid;
+  grid-template-columns: 14rem 1fr;
+  /* The header takes only the height it needs; the screen gets the rest */
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "header header"
+    "nav main";
+  min-height: 100vh;
+}
+
+.shell-header {
+  grid-area: header;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.shell-gym {
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+
+.shell-who {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.shell-error {
+  flex-basis: 100%;
+}
+
+.shell-nav {
+  grid-area: nav;
+  padding: 1rem;
+  background: var(--panel);
+}
+
+.shell-nav h2 {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.shell-nav ul {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.shell-nav a {
+  display: block;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.shell-nav a[aria-current="page"] {
+  font-weight: 700;
+  background: var(--background);
+}
+
+.shell-main {
+  grid-area: main;
+  padding: 1rem;
+  /* A long table scrolls inside the screen instead of widening the whole page */
+  min-width: 0;
+}
+
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 639px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "header"
+      "nav"
+      "main";
+  }
+
+  /* The menu becomes rows of links above the screen */
+  .shell-nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .sections {
+    grid-template-columns: 1fr;
+  }
+}

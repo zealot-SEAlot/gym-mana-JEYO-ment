@@ -30,6 +30,15 @@ export function setCsrfToken(token: string | null): void {
   csrfToken = token;
 }
 
+// What the shell does when the server says the session is gone: show the sign-in screen. Set once
+// by the shell, so no screen has to handle an idle timeout itself (R52)
+let onSignedOut: () => void = () => undefined;
+
+/** The shell calls this once with what to do when any request comes back "signed_out". */
+export function setSignedOutHandler(handler: () => void): void {
+  onSignedOut = handler;
+}
+
 export interface ApiOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
@@ -76,6 +85,9 @@ export async function api<T>(path: string, options: ApiOptions): Promise<T> {
   const answer: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const { error, details } = (answer ?? {}) as { error?: unknown; details?: unknown };
+    if (error === "signed_out") {
+      onSignedOut();
+    }
     const retryAfter = Number(response.headers.get("Retry-After"));
     throw new ApiError(
       response.status,
