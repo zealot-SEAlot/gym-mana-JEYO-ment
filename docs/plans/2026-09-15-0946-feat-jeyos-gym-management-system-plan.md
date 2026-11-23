@@ -681,8 +681,8 @@ flowchart TB
   5. Send a strict content security policy, `frame-ancestors 'none'`, HSTS, and no-store caching on `/api`, and set session cookies `Secure`, `HttpOnly`, and `SameSite=Strict`.
   6. Add the Manila-day helper, plan-length addition, and decimal-text centavo parsing to `packages/shared` (KTD7).
   7. Add the audit log and personal-values table with triggers that refuse updates and deletes, and build the erasure exception as a transaction-scoped flag that only the erasure service sets (KTD9, U8).
-  8. Add the clock guard from KTD7, and validate request bodies with shared Zod schemas through one error handler.
-- **Execution note:** ships as three pull requests: database, schema and the time and money helpers; HTTPS, headers and validation; settings, the audit log and the clock guard. The clock guard waits for the third because it stores the owner's time confirmation in settings.
+  8. Add the clock guard from KTD7 as one database trigger on each table with the shared record columns, so no service can forget it, and validate request bodies with shared Zod schemas through one error handler, which answers a refused record with 409 `clock_behind`. Confirming the clock resets the latest entry time to the confirmed time. (session-settled: U2c pairing session; a guard on every POST request would also block sign-in and the confirmation itself.)
+- **Execution note:** ships as three pull requests: database, schema and the time and money helpers; HTTPS, headers and validation; settings, the audit log and the clock guard. The clock guard waits for the third because it ships with the audit triggers in the same hand-written migration, and stores the owner's time confirmation in the system state row (U2a schema session, block 2).
 - **Test scenarios:**
   - 2026-09-15T15:59:59Z falls on September 15 in Manila, and 2026-09-15T16:00:00Z falls on September 16.
   - January 31, 2027 plus one month is February 28, 2027, plus two months is March 31, 2027, and January 31, 2028 plus one month is February 29, 2028.

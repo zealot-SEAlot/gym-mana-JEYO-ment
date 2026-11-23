@@ -1,4 +1,5 @@
 // One place that turns every API failure into a JSON error the screens can read (U2, plan step 8).
+import Database from "better-sqlite3";
 import type { ErrorRequestHandler } from "express";
 
 /** Throw this from a route to answer with a chosen status, such as 404 for a member that doesn't exist. */
@@ -19,6 +20,13 @@ export class HttpError extends Error {
 export const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
   if (error instanceof HttpError) {
     response.status(error.status).json({ error: error.code, details: error.details });
+    return;
+  }
+
+  // A clock guard trigger refused a new record (clock-guard.ts). 409 tells the screen to show
+  // the fix-the-clock message instead of a generic error
+  if (error instanceof Database.SqliteError && error.message === "clock_behind") {
+    response.status(409).json({ error: "clock_behind" });
     return;
   }
 
