@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router";
 
 import { App } from "./App.tsx";
 
@@ -10,6 +11,9 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    {/* Reads the address bar, so each screen has its own address and the back button works (KTD20) */}
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 );
