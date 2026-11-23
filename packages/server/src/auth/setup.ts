@@ -15,6 +15,7 @@ import type { GymDatabase } from "../db/client.ts";
 import { HttpError } from "../http/errors.ts";
 import { validateBody } from "../http/validate.ts";
 import { sameToken } from "./csrf.ts";
+import { allow } from "./guard.ts";
 import { hashCode, newCode } from "./one-time-codes.ts";
 import { hashPassword } from "./passwords.ts";
 import { clearTries, takeTry } from "./rate-limit.ts";
@@ -96,85 +97,98 @@ function issueRecoveryCode(tx: Pick<GymDatabase, "insert">, now: Date): string {
 export function setupRouter(db: GymDatabase, setupSecretFile: string): Router {
   const router = express.Router();
 
-  router.post("/", gymPcOnly, validateBody(setupSchema), async (request, response) => {
-    const { setupSecret, displayName, signInName, password } = request.body as z.infer<
-      typeof setupSchema
-    >;
-    if (ownerExists(db)) {
-      throw new HttpError(409, "setup_done");
-    }
-    let expected: string;
-    try {
-      expected = readFileSync(setupSecretFile, "utf8").trim();
-    } catch {
-      // The install script hasn't run, or the file was moved. Says so, instead of "wrong secret"
-      throw new HttpError(503, "setup_secret_missing");
-    }
-    if (expected === "" || !sameToken(setupSecret, expected)) {
-      throw new HttpError(403, "setup_secret_wrong");
-    }
-
-    // Hashing takes a moment, so it happens before the transaction, not inside it
-    const hashed = await hashPassword(password);
-    const now = new Date();
-    const recoveryCode = db.transaction((tx) => {
-      // Asked again inside the transaction: two setup forms sent at once can't both get here
-      // first. The accounts_one_owner index would refuse the second owner anyway
-      if (ownerExists(tx)) {
+  // Anyone, because nobody is signed in yet; gymPcOnly and the secret do the checking
+  router.post(
+    "/",
+    allow("anyone"),
+    gymPcOnly,
+    validateBody(setupSchema),
+    async (request, response) => {
+      const { setupSecret, displayName, signInName, password } = request.body as z.infer<
+        typeof setupSchema
+      >;
+      if (ownerExists(db)) {
         throw new HttpError(409, "setup_done");
       }
-      tx.insert(accounts)
-        .values({ displayName, signInName, role: "owner", ...hashed })
-        .run();
-      return issueRecoveryCode(tx, now);
-    });
-    // The only time the code is ever shown. The setup screen asks the owner to print it
-    response.status(201).json({ recoveryCode });
-  });
+      let expected: string;
+      try {
+        expected = readFileSync(setupSecretFile, "utf8").trim();
+      } catch {
+        // The install script hasn't run, or the file was moved. Says so, instead of "wrong secret"
+        throw new HttpError(503, "setup_secret_missing");
+      }
+      if (expected === "" || !sameToken(setupSecret, expected)) {
+        throw new HttpError(403, "setup_secret_wrong");
+      }
+
+      // Hashing takes a moment, so it happens before the transaction, not inside it
+      const hashed = await hashPassword(password);
+      const now = new Date();
+      const recoveryCode = db.transaction((tx) => {
+        // Asked again inside the transaction: two setup forms sent at once can't both get here
+        // first. The accounts_one_owner index would refuse the second owner anyway
+        if (ownerExists(tx)) {
+          throw new HttpError(409, "setup_done");
+        }
+        tx.insert(accounts)
+          .values({ displayName, signInName, role: "owner", ...hashed })
+          .run();
+        return issueRecoveryCode(tx, now);
+      });
+      // The only time the code is ever shown. The setup screen asks the owner to print it
+      response.status(201).json({ recoveryCode });
+    },
+  );
 
   // The owner forgot their password. The printed code sets a new one, works once, and ends every
   // owner session, so whoever was signed in as the owner is signed out (KTD5)
-  router.post("/recover", gymPcOnly, validateBody(recoverySchema), async (request, response) => {
-    const { recoveryCode, newPassword } = request.body as z.infer<typeof recoverySchema>;
-    const waitSeconds = takeTry(db, RECOVERY_LIMIT_KEY, new Date());
-    if (waitSeconds > 0) {
-      response.set("Retry-After", String(waitSeconds));
-      throw new HttpError(429, "too_many_tries");
-    }
+  router.post(
+    "/recover",
+    allow("anyone"),
+    gymPcOnly,
+    validateBody(recoverySchema),
+    async (request, response) => {
+      const { recoveryCode, newPassword } = request.body as z.infer<typeof recoverySchema>;
+      const waitSeconds = takeTry(db, RECOVERY_LIMIT_KEY, new Date());
+      if (waitSeconds > 0) {
+        response.set("Retry-After", String(waitSeconds));
+        throw new HttpError(429, "too_many_tries");
+      }
 
-    // Hashed before the code is checked, so the check and the change sit in one transaction with
-    // no waiting inside it. Two requests with the same code can't both use it
-    const hashed = await hashPassword(newPassword);
-    const now = new Date();
-    const newRecoveryCode = db.transaction((tx) => {
-      const stored = tx
-        .select()
-        .from(oneTimeCodes)
-        .where(
-          and(
-            eq(oneTimeCodes.purpose, "recovery"),
-            eq(oneTimeCodes.codeHash, hashCode(recoveryCode)),
-          ),
-        )
-        .get();
-      if (stored === undefined) {
-        throw new HttpError(401, "wrong_recovery_code");
-      }
-      if (Date.parse(stored.expiresAt) <= now.getTime()) {
-        throw new HttpError(401, "recovery_code_expired");
-      }
-      // Setup saved the owner and the first code together, so a code means there is an owner
-      const owner = tx.select().from(accounts).where(eq(accounts.role, "owner")).get()!;
-      tx.update(accounts).set(hashed).where(eq(accounts.id, owner.id)).run();
-      tx.delete(sessions).where(eq(sessions.accountId, owner.id)).run();
-      // Used once: deleting it means a second try finds nothing
-      tx.delete(oneTimeCodes).where(eq(oneTimeCodes.id, stored.id)).run();
-      // A fresh code, so the owner is never left with no way back in
-      return issueRecoveryCode(tx, now);
-    });
-    clearTries(db, RECOVERY_LIMIT_KEY);
-    response.json({ recoveryCode: newRecoveryCode });
-  });
+      // Hashed before the code is checked, so the check and the change sit in one transaction with
+      // no waiting inside it. Two requests with the same code can't both use it
+      const hashed = await hashPassword(newPassword);
+      const now = new Date();
+      const newRecoveryCode = db.transaction((tx) => {
+        const stored = tx
+          .select()
+          .from(oneTimeCodes)
+          .where(
+            and(
+              eq(oneTimeCodes.purpose, "recovery"),
+              eq(oneTimeCodes.codeHash, hashCode(recoveryCode)),
+            ),
+          )
+          .get();
+        if (stored === undefined) {
+          throw new HttpError(401, "wrong_recovery_code");
+        }
+        if (Date.parse(stored.expiresAt) <= now.getTime()) {
+          throw new HttpError(401, "recovery_code_expired");
+        }
+        // Setup saved the owner and the first code together, so a code means there is an owner
+        const owner = tx.select().from(accounts).where(eq(accounts.role, "owner")).get()!;
+        tx.update(accounts).set(hashed).where(eq(accounts.id, owner.id)).run();
+        tx.delete(sessions).where(eq(sessions.accountId, owner.id)).run();
+        // Used once: deleting it means a second try finds nothing
+        tx.delete(oneTimeCodes).where(eq(oneTimeCodes.id, stored.id)).run();
+        // A fresh code, so the owner is never left with no way back in
+        return issueRecoveryCode(tx, now);
+      });
+      clearTries(db, RECOVERY_LIMIT_KEY);
+      response.json({ recoveryCode: newRecoveryCode });
+    },
+  );
 
   return router;
 }

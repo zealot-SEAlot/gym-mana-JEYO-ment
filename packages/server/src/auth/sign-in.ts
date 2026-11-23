@@ -11,6 +11,7 @@ import type { z } from "zod";
 import type { GymDatabase } from "../db/client.ts";
 import { HttpError } from "../http/errors.ts";
 import { validateBody } from "../http/validate.ts";
+import { allow } from "./guard.ts";
 import { hashPassword, verifyPassword } from "./passwords.ts";
 import { clearTries, takeTry } from "./rate-limit.ts";
 import { endSession, findSession, startSession } from "./sessions.ts";
@@ -76,45 +77,55 @@ export function loadSession(db: GymDatabase): RequestHandler {
 export function signInRouter(db: GymDatabase): Router {
   const router = express.Router();
 
-  router.post("/sign-in", validateBody(signInSchema), async (request, response) => {
-    const { signInName, password } = request.body as z.infer<typeof signInSchema>;
-    // Counted per sign-in name, whether or not an account has it, so the limit can't reveal
-    // which names exist. Checked before the password, so a refused try costs no hashing
-    const limitKey = `sign-in:${signInName.toLowerCase()}`;
-    const waitSeconds = takeTry(db, limitKey, new Date());
-    if (waitSeconds > 0) {
-      // The standard header for "try again in this many seconds", for the sign-in screen
-      response.set("Retry-After", String(waitSeconds));
-      throw new HttpError(429, "too_many_tries");
-    }
-    // Sign-in names ignore upper and lower case, like the accounts_sign_in_name index
-    const account = db
-      .select()
-      .from(accounts)
-      .where(sql`lower(${accounts.signInName}) = lower(${signInName})`)
-      .get();
+  // Anyone, since signing in is how a signed-out person gets a session
+  router.post(
+    "/sign-in",
+    allow("anyone"),
+    validateBody(signInSchema),
+    async (request, response) => {
+      const { signInName, password } = request.body as z.infer<typeof signInSchema>;
+      // Counted per sign-in name, whether or not an account has it, so the limit can't reveal
+      // which names exist. Checked before the password, so a refused try costs no hashing
+      const limitKey = `sign-in:${signInName.toLowerCase()}`;
+      const waitSeconds = takeTry(db, limitKey, new Date());
+      if (waitSeconds > 0) {
+        // The standard header for "try again in this many seconds", for the sign-in screen
+        response.set("Retry-After", String(waitSeconds));
+        throw new HttpError(429, "too_many_tries");
+      }
+      // Sign-in names ignore upper and lower case, like the accounts_sign_in_name index
+      const account = db
+        .select()
+        .from(accounts)
+        .where(sql`lower(${accounts.signInName}) = lower(${signInName})`)
+        .get();
 
-    const stored = account ?? NO_ACCOUNT;
-    const correct = await verifyPassword(password, stored.passwordHash, stored.passwordHashMethod);
-    // One answer for a wrong name, a wrong password, and a disabled account (R50), so the screen
-    // never tells a stranger which of the three it was
-    if (account === undefined || account.disabled || !correct) {
-      throw new HttpError(401, "wrong_sign_in");
-    }
-    clearTries(db, limitKey);
+      const stored = account ?? NO_ACCOUNT;
+      const correct = await verifyPassword(
+        password,
+        stored.passwordHash,
+        stored.passwordHashMethod,
+      );
+      // One answer for a wrong name, a wrong password, and a disabled account (R50), so the screen
+      // never tells a stranger which of the three it was
+      if (account === undefined || account.disabled || !correct) {
+        throw new HttpError(401, "wrong_sign_in");
+      }
+      clearTries(db, limitKey);
 
-    // A new token on every sign-in, and the old one ended, so a token someone saw before sign-in
-    // is worthless afterwards
-    const oldToken = readCookie(request);
-    if (oldToken !== undefined) {
-      endSession(db, oldToken);
-    }
-    const { token, csrfToken } = startSession(db, account.id, new Date());
-    response.cookie(COOKIE, token, COOKIE_OPTIONS);
-    response.json({ displayName: account.displayName, role: account.role, csrfToken });
-  });
+      // A new token on every sign-in, and the old one ended, so a token someone saw before sign-in
+      // is worthless afterwards
+      const oldToken = readCookie(request);
+      if (oldToken !== undefined) {
+        endSession(db, oldToken);
+      }
+      const { token, csrfToken } = startSession(db, account.id, new Date());
+      response.cookie(COOKIE, token, COOKIE_OPTIONS);
+      response.json({ displayName: account.displayName, role: account.role, csrfToken });
+    },
+  );
 
-  router.post("/sign-out", (request, response) => {
+  router.post("/sign-out", allow("anyone"), (request, response) => {
     const token = readCookie(request);
     if (token !== undefined) {
       endSession(db, token);
@@ -125,7 +136,7 @@ export function signInRouter(db: GymDatabase): Router {
 
   // After a reload the page has lost the CSRF token it got at sign-in, so it asks again here.
   // Another website can't read this answer, and its requests don't carry the cookie anyway
-  router.get("/session", (request, response) => {
+  router.get("/session", allow("anyone"), (request, response) => {
     const signedIn = signedInAs(request);
     response.json(
       signedIn && {

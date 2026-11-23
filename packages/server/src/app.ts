@@ -5,8 +5,10 @@ import express from "express";
 import type { Express } from "express";
 
 import { requireCsrfToken } from "./auth/csrf.ts";
+import { allow, requireEveryRouteDeclared } from "./auth/guard.ts";
 import { setupRouter } from "./auth/setup.ts";
 import { loadSession, signInRouter } from "./auth/sign-in.ts";
+import { staffRouter } from "./auth/staff.ts";
 import type { GymDatabase } from "./db/client.ts";
 import { errorHandler, HttpError } from "./http/errors.ts";
 import { noStore, securityHeaders } from "./http/security-headers.ts";
@@ -43,6 +45,7 @@ export function createApp({
   api.use(requireCsrfToken);
   api.use("/auth", signInRouter(db));
   api.use("/setup", setupRouter(db, setupSecretFile));
+  api.use("/staff", staffRouter(db));
   api.use(() => {
     throw new HttpError(404, "not_found");
   });
@@ -52,11 +55,14 @@ export function createApp({
   app.use(express.static(clientDir));
 
   // The client switches screens itself, so a reload on /members/42 must still get the client page
-  app.get("/{*path}", (_request, response) => {
+  // Anyone: the page itself holds no gym data, and every /api route it calls has its own guard
+  app.get("/{*path}", allow("anyone"), (_request, response) => {
     response.sendFile(indexFile);
   });
 
   app.use(errorHandler);
 
+  // A route with no allow(...) stops the server here, before it can answer anything (KTD6)
+  requireEveryRouteDeclared(app);
   return app;
 }

@@ -338,7 +338,7 @@ flowchart TB
   - Failed sign-ins, exhausted rate limits, and denied requests go to a security log that the System Status screen summarizes (U20).
 
   Governs R3, R4, R42, R49, R50, R51, R52, R54.
-- KTD6. **Every route, including the desk live feed and photo requests, declares its allowed roles where it is defined, and one guard denies any route without a declaration.** The permission test discovers routes from the router and checks each one against owner, staff, door device, member, and signed-out requests. Hiding buttons in the React app is not an access control.
+- KTD6. **Every route, including the desk live feed and photo requests, declares its allowed roles where it is defined, and the server refuses to start while any route lacks a declaration.** The permission test discovers routes from the router and checks each one against owner, staff, door device, member, and signed-out requests. Hiding buttons in the React app is not an access control. (Changed in U3b from a guard that denies undeclared routes on each request: refusing to start is stricter, since a forgotten declaration fails every test and CI before it can answer anything, and it needs no change to Express's internal route list.)
 - KTD7. **Money is stored as integer centavos parsed from decimal text, and times are stored in UTC.** Amounts are never converted by multiplying a JavaScript number, because ₱1.15 × 100 is not exactly 115. Every record stores its original time, its entry time, and its Manila date, which one shared helper computes from the original time with Luxon. Plan-length math uses Luxon's month addition, which ends on the last day of shorter months. Replay adds the total months since the current run of on-time renewals started to that run's start date, so a clamped February 28 renews to March 31 rather than March 28. A late renewal, a carried-over date, or a plan length in days starts a new run. When the clock is earlier than the latest stored record, the server refuses new records and shows a fix-the-clock screen until the owner confirms the time. Governs R55, R56.
 - KTD8. **Membership state is derived, not stored, and every check-in has an explicit kind.**
   - Expiry is replayed from the member's one allowed non-voided carried-over entry and their non-voided membership payments. Payments are ordered by original time, then by row ID, using the plan length, unit, and price recorded on each payment.
@@ -365,7 +365,7 @@ flowchart TB
 - KTD14. **The core starts with a thin working path, then splits into three parallel tracks.** The path is register a member, print their code, scan it at the door, and see the result on the desk screen. It proves camera scanning and the check-in rules on real hardware before the rest of the core builds on them. The contracts every track relies on are fixed before the tracks split: check-in kinds (U5), the payment entry contract (U6), settings and module schema files (U2), and the client navigation shell with its owner and staff screen groups (U3). Governs R39.
 - KTD15. **Testing uses Vitest, Supertest, React Testing Library, and Playwright.**
   - Vitest covers shared rules, domain rules, and server services against a temporary SQLite file per test file.
-  - Supertest covers routes and the KTD6 permission matrix, and React Testing Library covers key screens.
+  - Tests that start the app on a free port and call it with `fetch` cover routes and the KTD6 permission matrix, and React Testing Library covers key screens.
   - Playwright covers the scan path end to end, feeding a recorded QR video to a fake camera.
   - A migration upgrade test applies new migrations to a database built by the previous release.
   - A GitHub Actions check runs type checks, lint, and tests on every pull request.
@@ -709,7 +709,7 @@ flowchart TB
   2. Build sessions, password hashing, CSRF protection, stored rate limits, and one-time codes per KTD5, with the idle timeout read from settings (R52), counting only requests the user starts as activity so the open feed and automatic reloads never extend a session (KTD10).
   3. Let the owner add, disable, and reset staff, each with a unique sign-in name, keeping disabled accounts linked to their past records (R50).
   4. Pair and revoke the door tablet with one-time codes and a hashed device token in an `HttpOnly` cookie, and show each device's last scan time and address (R51).
-  5. Declare roles on each route definition and let the guard deny undeclared routes, with the matrix test discovering routes from the router (KTD6).
+  5. Declare roles on each route definition with `allow(...)` as its first handler, refuse to start the server while any route lacks one, and have the matrix test discover routes from the router and compare them to a written table of expected access (KTD6).
   6. Build the client navigation shell with the owner and staff screen groups and the KTD20 responsive convention, so every track adds its screens into it (KTD14).
 - **Execution note:** ships as four pull requests: passwords and sessions; the route guard, permission matrix and staff accounts; device pairing; the client navigation shell.
 - **Test scenarios:**
@@ -722,11 +722,11 @@ flowchart TB
   - A desk with an open feed and automatic reloads is still signed out once the idle timeout passes.
   - A disabled staff account cannot sign in, and its name still shows on a payment it recorded earlier.
   - Adding a staff account with a sign-in name already in use, including a disabled account's, is refused.
-  - After the owner renames Lee to Lee Santos, a payment Lee recorded earlier still shows "Lee", and a new payment shows "Lee Santos".
+  - After the owner renames Lee to Lee Santos, a payment Lee recorded earlier still shows "Lee", and a new payment shows "Lee Santos". (Tested in U6, when payments exist; U3b tests that the rename reaches the account.)
   - The recovery code resets the owner password once on the gym PC, ends every owner session, and is refused on reuse.
   - The sixth wrong one-time code attempt is rate-limited, and an expired code is refused.
   - A valid pairing code returns a device token cookie, and a revoked tablet's next scan request is refused.
-  - The permission matrix checks every discovered route against owner, staff, door device, member, and signed-out requests, and a route with no role declaration is denied.
+  - The permission matrix checks every discovered route against owner, staff, door device, member, and signed-out requests, and an app with a route that has no role declaration refuses to start. (U3b checks owner, staff, and signed-out; U3c adds the door device and U18 adds members.)
   - Staff calls to change prices or plans, delete records, or manage accounts are refused (R4).
   - The door device's calls to any non-scan route are refused (R42, R54).
   - A cookie-authenticated write without a CSRF token is refused.
