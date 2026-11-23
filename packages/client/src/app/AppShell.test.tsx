@@ -3,27 +3,9 @@ import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, setCsrfToken } from "../api.ts";
+import { fetchMock, json, noContent, serve } from "../test-server.ts";
 import { AppShell } from "./AppShell.tsx";
 import type { Screen } from "./screens.tsx";
-
-// Stands in for the server: each test lists what each "METHOD /path" answers
-const fetchMock = vi.fn<typeof fetch>();
-
-function serve(routes: Record<string, () => Response>): void {
-  fetchMock.mockImplementation((url, init) => {
-    // api() always passes the address as a string
-    const route = routes[`${init?.method ?? "GET"} ${url as string}`];
-    return route ? Promise.resolve(route()) : Promise.reject(new TypeError("Failed to fetch"));
-  });
-}
-
-function json(status: number, body: unknown): () => Response {
-  return () =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { "Content-Type": "application/json" },
-    });
-}
 
 const LEE = { displayName: "Lee", role: "staff", csrfToken: "csrf-lee" };
 const OWNER = { displayName: "Jeyo", role: "owner", csrfToken: "csrf-owner" };
@@ -90,7 +72,7 @@ describe("AppShell", () => {
   it("goes straight to the screen after a reload, with the CSRF token for writes", async () => {
     serve({
       "GET /api/auth/session": json(200, LEE),
-      "POST /api/auth/sign-out": () => new Response(null, { status: 204 }),
+      "POST /api/auth/sign-out": noContent,
     });
     renderAt("/leave");
 
@@ -137,7 +119,7 @@ describe("AppShell", () => {
   it("signs out and returns to the sign-in screen", async () => {
     serve({
       "GET /api/auth/session": json(200, LEE),
-      "POST /api/auth/sign-out": () => new Response(null, { status: 204 }),
+      "POST /api/auth/sign-out": noContent,
     });
     renderAt("/leave");
 

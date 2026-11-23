@@ -7,6 +7,8 @@
 import type { AccountRole } from "@jeyos/shared";
 import type { ReactNode } from "react";
 
+import { StaffPage } from "../owner/StaffPage.tsx";
+
 export type ScreenGroup = "desk" | "owner";
 
 export interface Screen {
@@ -35,5 +37,6 @@ export function screensFor(role: AccountRole, screens: readonly Screen[]): Scree
   return screens.filter((screen) => GROUPS_FOR[role].includes(screen.group));
 }
 
-// Empty until the staff and devices steps of U3d add the first owner screens
-export const SCREENS: readonly Screen[] = [];
+export const SCREENS: readonly Screen[] = [
+  { path: "/owner/staff", label: "Staff", group: "owner", element: <StaffPage /> },
+];

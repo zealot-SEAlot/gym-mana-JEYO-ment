@@ -3,16 +3,40 @@
 import { useId } from "react";
 import type { InputHTMLAttributes } from "react";
 
+import { ApiError } from "./api.ts";
+
+/**
+ * The sentence to show for a failed request. words gives this screen's sentences for the server's
+ * error codes it expects, such as { sign_in_name_taken: "..." }; anything else gets a general one.
+ */
+export function errorMessage(error: unknown, words: Partial<Record<string, string>> = {}): string {
+  if (error instanceof ApiError) {
+    const sentence = words[error.code];
+    if (sentence !== undefined) {
+      return sentence;
+    }
+    if (error.code === "server_unreachable") {
+      return "Can't reach the gym PC. Check that it is on and that this device is on the gym Wi-Fi.";
+    }
+  }
+  return "Something went wrong. Try again.";
+}
+
 /**
  * Each field's messages, keyed by field name. The server's "invalid_request" details use the same
  * shape ({ fields: FieldErrors }), so a screen can show either one the same way.
  */
 export type FieldErrors = Partial<Record<string, string[]>>;
 
+// What a shared schema's safeParse says about one complaint
+type Issue = { path: readonly PropertyKey[]; message: string };
+
+/** Any shared schema's safeParse result, whichever form it checked. */
+export type Checked =
+  { success: true; data: unknown } | { success: false; error: { issues: readonly Issue[] } };
+
 /** Groups a failed safeParse's issues by the field each one names. */
-export function fieldErrorsOf(
-  issues: readonly { path: readonly PropertyKey[]; message: string }[],
-): FieldErrors {
+export function fieldErrorsOf(issues: readonly Issue[]): FieldErrors {
   const errors: FieldErrors = {};
   for (const { path, message } of issues) {
     (errors[String(path[0])] ??= []).push(message);

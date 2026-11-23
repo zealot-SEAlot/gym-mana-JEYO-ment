@@ -7,7 +7,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { api, ApiError, setCsrfToken } from "../api.ts";
-import { fieldErrorsOf, TextField } from "../forms.tsx";
+import { errorMessage, fieldErrorsOf, TextField } from "../forms.tsx";
 import type { FieldErrors } from "../forms.tsx";
 
 /** Who is signed in on this page: what the shell needs to pick the owner or staff screens. */
@@ -19,19 +19,11 @@ export interface SignedIn {
 // The server gives one answer for a wrong name, a wrong password, and a disabled account (R50), so
 // the screen can't say which one it was either
 function messageFor(error: unknown): string {
-  if (error instanceof ApiError) {
-    switch (error.code) {
-      case "wrong_sign_in":
-        return "Wrong sign-in name or password.";
-      case "too_many_tries": {
-        const minutes = Math.ceil((error.retryAfterSeconds ?? 60) / 60);
-        return `Too many wrong passwords. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
-      }
-      case "server_unreachable":
-        return "Can't reach the gym PC. Check that it is on and that this device is on the gym Wi-Fi.";
-    }
+  if (error instanceof ApiError && error.code === "too_many_tries") {
+    const minutes = Math.ceil((error.retryAfterSeconds ?? 60) / 60);
+    return `Too many wrong passwords. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
   }
-  return "Something went wrong. Try again.";
+  return errorMessage(error, { wrong_sign_in: "Wrong sign-in name or password." });
 }
 
 export function LoginPage({ onSignedIn }: { onSignedIn: (signedIn: SignedIn) => void }) {
