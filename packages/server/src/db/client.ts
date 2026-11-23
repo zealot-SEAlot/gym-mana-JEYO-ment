@@ -1,6 +1,8 @@
 // Opens the gym's SQLite database with the settings from the plan (KTD2).
 import Database from "better-sqlite3";
 
+import { registerErasureFlag } from "../audit/audit-log.ts";
+
 /** Opens the database file at filePath. The path comes from config and never points inside the repo. */
 export function openDatabase(filePath: string): Database.Database {
   const db = new Database(filePath);
@@ -14,5 +16,7 @@ export function openDatabase(filePath: string): Database.Database {
   db.pragma("secure_delete = ON");
   // Wait up to 5 seconds for another writer instead of failing (already better-sqlite3's default; set anyway)
   db.pragma("busy_timeout = 5000");
+  // The audit triggers call this to tell an erasure's redaction from any other change (KTD9)
+  registerErasureFlag(db);
   return db;
 }
