@@ -1,8 +1,8 @@
 import type Database from "better-sqlite3";
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 
+import type { GymDatabase } from "../db/client.ts";
 import { openTestDatabase } from "../db/test-database.ts";
 import { readSetting, registerSetting, writeSetting } from "./settings.ts";
 import type { Setting } from "./settings.ts";
@@ -16,7 +16,7 @@ const dayPassPrice = registerSetting(
 
 describe("settings", () => {
   let sqlite: Database.Database;
-  let db: BetterSQLite3Database;
+  let db: GymDatabase;
 
   beforeEach(() => {
     ({ sqlite, db } = openTestDatabase());

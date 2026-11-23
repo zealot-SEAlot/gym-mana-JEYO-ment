@@ -1,7 +1,14 @@
 // Opens the gym's SQLite database with the settings from the plan (KTD2).
 import Database from "better-sqlite3";
+import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 
 import { registerErasureFlag } from "../audit/audit-log.ts";
+
+/**
+ * The database as services use it: Drizzle's queries, plus the connection under them ($client),
+ * which tells writeAudit whether it is inside a transaction. drizzle({ client }) returns this
+ */
+export type GymDatabase = BetterSQLite3Database & { $client: Database.Database };
 
 /** Opens the database file at filePath. The path comes from config and never points inside the repo. */
 export function openDatabase(filePath: string): Database.Database {

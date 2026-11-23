@@ -4,14 +4,14 @@ import { fileURLToPath } from "node:url";
 
 import type Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
 import { openDatabase } from "./client.ts";
+import type { GymDatabase } from "./client.ts";
 
 const GYM_MIGRATIONS = fileURLToPath(new URL("./migrations/gym", import.meta.url));
 
-export function openTestDatabase(): { sqlite: Database.Database; db: BetterSQLite3Database } {
+export function openTestDatabase(): { sqlite: Database.Database; db: GymDatabase } {
   const sqlite = openDatabase(":memory:");
   const db = drizzle({ client: sqlite });
   migrate(db, { migrationsFolder: GYM_MIGRATIONS });

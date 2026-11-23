@@ -3,8 +3,9 @@
 // another for a setting. A row exists only once the owner changes a setting (schema session, block 2)
 import { settings } from "@jeyos/domain";
 import { eq } from "drizzle-orm";
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { z } from "zod";
+
+import type { GymDatabase } from "../db/client.ts";
 
 /** One registered setting. Only registerSetting makes these, so a typo in a key can't reach the database. */
 export interface Setting<T> {
@@ -44,7 +45,7 @@ function assertRegistered(setting: Setting<unknown>): void {
 }
 
 /** The owner's value for a setting, or its default when the owner never changed it. */
-export function readSetting<T>(db: BetterSQLite3Database, setting: Setting<T>): T {
+export function readSetting<T>(db: GymDatabase, setting: Setting<T>): T {
   assertRegistered(setting);
   const row = db
     .select({ value: settings.value })
@@ -60,7 +61,7 @@ export function readSetting<T>(db: BetterSQLite3Database, setting: Setting<T>): 
 
 /** Saves the owner's new value, recording which account changed it and when. */
 export function writeSetting<T>(
-  db: BetterSQLite3Database,
+  db: GymDatabase,
   setting: Setting<T>,
   value: T,
   accountId: number,

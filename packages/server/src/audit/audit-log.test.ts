@@ -5,8 +5,119 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import type { GymDatabase } from "../db/client.ts";
 import { openTestDatabase } from "../db/test-database.ts";
-import { inErasureTransaction } from "./audit-log.ts";
+import { inErasureTransaction, writeAudit } from "./audit-log.ts";
+import type { AuditEntry } from "./audit-log.ts";
+
+// The owner changed member 1's phone number, written the way the member edit service (U8) will
+const phoneChange: AuditEntry = {
+  tableName: "member_details",
+  rowId: 1,
+  action: "member_edit",
+  account: { id: 1, displayName: "Jeyo" },
+  recordManilaDate: "2026-11-23",
+  personalValues: [{ memberId: 1, field: "phone", before: "09171234567", after: "09181234567" }],
+};
+
+describe("writeAudit", () => {
+  let sqlite: Database.Database;
+  let db: GymDatabase;
+
+  beforeEach(() => {
+    ({ sqlite, db } = openTestDatabase());
+    sqlite.exec(`
+      INSERT INTO members (id, occurred_at, entered_at, manila_date, entry_mode,
+        entered_by_account_id, entered_by_name, code)
+      VALUES (1, '2026-11-23T02:00:00.000Z', '2026-11-23T02:00:00.000Z', '2026-11-23', 'normal',
+        1, 'Jeyo', 'member-code')
+    `);
+  });
+
+  afterEach(() => {
+    sqlite.close();
+  });
+
+  const count = (table: string) =>
+    sqlite.prepare(`SELECT count(*) AS n FROM ${table}`).pluck().get();
+
+  it("saves the audit row with the account's name, and its personal values apart", () => {
+    sqlite.transaction(() =>
+      writeAudit(db, {
+        tableName: "payments",
+        rowId: 12,
+        action: "void",
+        account: { id: 1, displayName: "Jeyo" },
+        recordManilaDate: "2026-11-22",
+        reason: "Wrong amount",
+        before: { amountCentavos: 8000, voided: false },
+        after: { amountCentavos: 8000, voided: true },
+      }),
+    )();
+    sqlite.transaction(() => writeAudit(db, phoneChange))();
+
+    expect(
+      sqlite
+        .prepare(
+          "SELECT table_name, row_id, action, account_name, record_manila_date, reason, before_json, after_json FROM audit_log ORDER BY id",
+        )
+        .all(),
+    ).toEqual([
+      {
+        table_name: "payments",
+        row_id: 12,
+        action: "void",
+        account_name: "Jeyo",
+        record_manila_date: "2026-11-22",
+        reason: "Wrong amount",
+        before_json: '{"amountCentavos":8000,"voided":false}',
+        after_json: '{"amountCentavos":8000,"voided":true}',
+      },
+      {
+        table_name: "member_details",
+        row_id: 1,
+        action: "member_edit",
+        account_name: "Jeyo",
+        record_manila_date: "2026-11-23",
+        reason: null,
+        before_json: null,
+        after_json: null,
+      },
+    ]);
+    expect(
+      sqlite
+        .prepare("SELECT audit_log_id, member_id, field, before, after FROM audit_personal_values")
+        .all(),
+    ).toEqual([
+      {
+        audit_log_id: 2,
+        member_id: 1,
+        field: "phone",
+        before: "09171234567",
+        after: "09181234567",
+      },
+    ]);
+  });
+
+  it("refuses to write outside a transaction", () => {
+    expect(() => writeAudit(db, phoneChange)).toThrow(
+      "writeAudit must run inside the transaction of the change it records",
+    );
+    expect(count("audit_log")).toBe(0);
+  });
+
+  it("disappears with the change it records when the transaction rolls back", () => {
+    expect(() =>
+      sqlite.transaction(() => {
+        writeAudit(db, phoneChange);
+        throw new Error("the member edit failed after its audit row was written");
+      })(),
+    ).toThrow("the member edit failed");
+
+    expect(count("audit_log")).toBe(0);
+    expect(count("audit_personal_values")).toBe(0);
+  });
+});
 
 // A member edit that changed a phone number: one audit row and one personal value (R59)
 function addMemberEdit(sqlite: Database.Database): void {
