@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 
 import { accounts, oneTimeCodes, sessions } from "@jeyos/domain";
 import { recoverySchema, setupSchema } from "@jeyos/shared";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import express from "express";
 import type { Request, RequestHandler, Router } from "express";
 import type { z } from "zod";
@@ -16,7 +16,7 @@ import { HttpError } from "../http/errors.ts";
 import { validateBody } from "../http/validate.ts";
 import { sameToken } from "./csrf.ts";
 import { allow } from "./guard.ts";
-import { hashCode, newCode } from "./one-time-codes.ts";
+import { newCode, useCode } from "./one-time-codes.ts";
 import { hashPassword } from "./passwords.ts";
 import { clearTries, takeTry } from "./rate-limit.ts";
 
@@ -160,28 +160,18 @@ export function setupRouter(db: GymDatabase, setupSecretFile: string): Router {
       const hashed = await hashPassword(newPassword);
       const now = new Date();
       const newRecoveryCode = db.transaction((tx) => {
-        const stored = tx
-          .select()
-          .from(oneTimeCodes)
-          .where(
-            and(
-              eq(oneTimeCodes.purpose, "recovery"),
-              eq(oneTimeCodes.codeHash, hashCode(recoveryCode)),
-            ),
-          )
-          .get();
-        if (stored === undefined) {
+        // Used once: a right code is deleted here, so a second try finds nothing
+        const result = useCode(tx, "recovery", recoveryCode, now);
+        if (result === "wrong") {
           throw new HttpError(401, "wrong_recovery_code");
         }
-        if (Date.parse(stored.expiresAt) <= now.getTime()) {
+        if (result === "expired") {
           throw new HttpError(401, "recovery_code_expired");
         }
         // Setup saved the owner and the first code together, so a code means there is an owner
         const owner = tx.select().from(accounts).where(eq(accounts.role, "owner")).get()!;
         tx.update(accounts).set(hashed).where(eq(accounts.id, owner.id)).run();
         tx.delete(sessions).where(eq(sessions.accountId, owner.id)).run();
-        // Used once: deleting it means a second try finds nothing
-        tx.delete(oneTimeCodes).where(eq(oneTimeCodes.id, stored.id)).run();
         // A fresh code, so the owner is never left with no way back in
         return issueRecoveryCode(tx, now);
       });

@@ -5,6 +5,7 @@ import express from "express";
 import type { Express } from "express";
 
 import { requireCsrfToken } from "./auth/csrf.ts";
+import { devicesRouter, loadDevice } from "./auth/devices.ts";
 import { allow, requireEveryRouteDeclared } from "./auth/guard.ts";
 import { setupRouter } from "./auth/setup.ts";
 import { loadSession, signInRouter } from "./auth/sign-in.ts";
@@ -39,13 +40,15 @@ export function createApp({
   api.use(noStore);
   // Reads JSON request bodies up to 100 KB; a broken or larger body becomes a 4xx error
   api.use(express.json());
-  // Finds the signed-in account, if any, before any router runs
+  // Finds the signed-in account and the paired door tablet, if any, before any router runs
   api.use(loadSession(db));
-  // Every write from a signed-in browser must carry its CSRF token
+  api.use(loadDevice(db));
+  // Every write from a signed-in browser or a paired tablet must carry its CSRF token
   api.use(requireCsrfToken);
   api.use("/auth", signInRouter(db));
   api.use("/setup", setupRouter(db, setupSecretFile));
   api.use("/staff", staffRouter(db));
+  api.use("/devices", devicesRouter(db));
   api.use(() => {
     throw new HttpError(404, "not_found");
   });

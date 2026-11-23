@@ -8,6 +8,7 @@ export {
   signInNameSchema,
   updateStaffSchema,
 } from "./accounts.ts";
+export { pairDeviceSchema } from "./devices.ts";
 export { formatCentavos, pesosToCentavos } from "./money.ts";
 export { passwordSchema } from "./password.ts";
 export { recoverySchema, setupSchema } from "./setup.ts";

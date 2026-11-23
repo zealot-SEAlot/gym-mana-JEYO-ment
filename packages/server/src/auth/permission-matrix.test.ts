@@ -3,20 +3,21 @@
 // as every kind of requester to prove the guard lets in exactly those and no one else.
 // A new route fails this test until someone adds it to EXPECTED, so every access decision is
 // written down here, where a reviewer sees it.
-// U3c adds the door tablet as a requester, and U18 adds members.
+// U18 adds members as a requester.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { devices } from "@jeyos/domain";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createApp } from "../app.ts";
 import { openTestDatabase } from "../db/test-database.ts";
 import type { Access } from "./guard.ts";
 import { listRoutes } from "./guard.ts";
-import { startSession } from "./sessions.ts";
+import { hashToken, randomToken, startSession } from "./sessions.ts";
 
 // Who may call each route. Change a line here only on purpose, and say why in the pull request
 const EXPECTED: Record<string, Access[]> = {
@@ -30,13 +31,21 @@ const EXPECTED: Record<string, Access[]> = {
   "POST /api/staff": ["owner"],
   "PATCH /api/staff/:id": ["owner"],
   "POST /api/staff/:id/password": ["owner"],
+  // Pairing and revoking door tablets is the owner's alone (R51)
+  "POST /api/devices/pairing-code": ["owner"],
+  "GET /api/devices": ["owner"],
+  "DELETE /api/devices/:id": ["owner"],
+  // The tablet has no login yet when it pairs; the code is the proof
+  "POST /api/devices/pair": ["anyone"],
+  // The tablet's own check that it is still paired
+  "GET /api/devices/this": ["door"],
   "GET /{*path}": ["anyone"],
 };
 
 // The test database already has the owner as account 1 (test-database.ts); this adds staff as 2
 const ACCOUNT_IDS = { owner: 1, staff: 2 } as const;
-type Requester = keyof typeof ACCOUNT_IDS | "signedOut";
-const REQUESTERS: Requester[] = ["owner", "staff", "signedOut"];
+type Requester = keyof typeof ACCOUNT_IDS | "door" | "signedOut";
+const REQUESTERS: Requester[] = ["owner", "staff", "door", "signedOut"];
 
 // The answers only the guard gives. Any other answer, even an error, means the guard let it through
 const GUARD_REFUSALS = new Set(["signed_out", "not_allowed"]);
@@ -87,9 +96,18 @@ describe("permission matrix", () => {
     "$requester: $method $path is $verdict",
     async ({ method, path, requester, allowed }) => {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (requester !== "signedOut") {
-        // A new session for each call, so a call to sign-out can't sign out the calls after it.
-        // The CSRF token is sent too, so the CSRF check can't refuse what the guard would allow
+      // A new session or tablet for each call, so a call to sign-out or revoke can't sign out the
+      // calls after it. The CSRF token is sent too, so the CSRF check can't refuse what the guard
+      // would allow
+      if (requester === "door") {
+        const token = randomToken();
+        const csrfToken = randomToken();
+        db.insert(devices)
+          .values({ tokenHash: hashToken(token), csrfToken, pairedAt: new Date().toISOString() })
+          .run();
+        headers.Cookie = `__Host-jeyos-device=${token}`;
+        headers["X-CSRF-Token"] = csrfToken;
+      } else if (requester !== "signedOut") {
         const { token, csrfToken } = startSession(db, ACCOUNT_IDS[requester], new Date());
         headers.Cookie = `__Host-jeyos-session=${token}`;
         headers["X-CSRF-Token"] = csrfToken;

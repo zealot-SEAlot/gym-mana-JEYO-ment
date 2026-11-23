@@ -334,7 +334,7 @@ flowchart TB
   - Every one-time code (recovery, pairing, member access) is random, stored hashed, and has a fixed length, an expiry, and an attempt limit.
   - "On the gym PC itself" is decided from the connection's own address, ignoring forwarded headers, with an allow-list for the Host and Origin headers. Setup also requires a secret that the install script writes to the data folder (`setup-secret.txt`), and the setup routes accept only connections whose local and remote addresses are both loopback (127.0.0.1 or ::1). The operating system delivers those only from the gym PC itself, so a device that claims the gym PC's address on the Wi-Fi still cannot reach them. (Changed in U3a from a separate loopback-only listener: the same guarantee without a second port or server.)
   - Recovery works only on the gym PC and ends every owner session.
-  - The device token works only on scan routes, and the owner sees each device's last scan time and address.
+  - The device token works only on routes that declare the door: the scan routes and the tablet's own check that it is still paired. The tablet's writes carry its own CSRF token, and the owner sees each device's last scan time and address.
   - Failed sign-ins, exhausted rate limits, and denied requests go to a security log that the System Status screen summarizes (U20).
 
   Governs R3, R4, R42, R49, R50, R51, R52, R54.
@@ -725,8 +725,8 @@ flowchart TB
   - After the owner renames Lee to Lee Santos, a payment Lee recorded earlier still shows "Lee", and a new payment shows "Lee Santos". (Tested in U6, when payments exist; U3b tests that the rename reaches the account.)
   - The recovery code resets the owner password once on the gym PC, ends every owner session, and is refused on reuse.
   - The sixth wrong one-time code attempt is rate-limited, and an expired code is refused.
-  - A valid pairing code returns a device token cookie, and a revoked tablet's next scan request is refused.
-  - The permission matrix checks every discovered route against owner, staff, door device, member, and signed-out requests, and an app with a route that has no role declaration refuses to start. (U3b checks owner, staff, and signed-out; U3c adds the door device and U18 adds members.)
+  - A valid pairing code returns a device token cookie, and a revoked tablet's next scan request is refused. (U3c tests the tablet's next request to its paired check; U5 adds the scan route.)
+  - The permission matrix checks every discovered route against owner, staff, door device, member, and signed-out requests, and an app with a route that has no role declaration refuses to start. (U3b and U3c check owner, staff, door device, and signed-out; U18 adds members.)
   - Staff calls to change prices or plans, delete records, or manage accounts are refused (R4).
   - The door device's calls to any non-scan route are refused (R42, R54).
   - A cookie-authenticated write without a CSRF token is refused.
@@ -765,7 +765,7 @@ flowchart TB
 - **Files:** `packages/domain/src/checkins/rules.ts`, `packages/server/src/checkins/checkin.routes.ts`, `packages/server/src/checkins/checkin.service.ts`, `packages/server/src/checkins/rejections.ts`, `packages/server/src/events/desk-feed.ts`, `packages/client/src/desk/DoorFeed.tsx`, `packages/client/src/desk/CheckInByName.tsx`, `packages/domain/src/checkins/rules.test.ts`, `packages/server/src/checkins/checkin.service.test.ts`, `packages/server/src/checkins/checkin.routes.test.ts`, `packages/server/src/events/desk-feed.test.ts`
 - **Approach:**
   1. Fix the check-in record shape: kind, member or pass, the KTD7 time columns, and the link to an overridden rejection (KTD8). Add a `door_events` table whose one monotonic ID covers accepted check-ins and rejected scans alike, written in the same transaction as each, and use it as the feed's event ID and resume point (KTD10).
-  2. Resolve each device scan in one transaction using the KTD8 rules, as the scan diagram shows, leaving the day-pass branch for U9.
+  2. Resolve each device scan in one transaction using the KTD8 rules, as the scan diagram shows, leaving the day-pass branch for U9. Declare the scan route `allow("door")`, rate-limit it per device, and record the device's last scan time and address in the `devices` columns U3c added (KTD5).
   3. Store each rejection with its checked, shortened scanned value (KTD10, R58).
   4. Build desk check-in by name for active members only: scan-using when it is the day's first, an override when linked to a stored rejection (R16, R18).
   5. Serve the KTD10 feed behind the session guard, with resume by door-event ID and the paused sign-in prompt when the session ends.

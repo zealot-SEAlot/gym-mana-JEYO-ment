@@ -27,13 +27,14 @@ export interface SignedIn {
   csrfToken: string;
 }
 
-// 32 random bytes is 256 bits, far too many to guess. base64url keeps it safe inside a cookie
-function randomToken(): string {
+// 32 random bytes is 256 bits, far too many to guess. base64url keeps it safe inside a cookie.
+// Also used for the door tablet's token (devices.ts)
+export function randomToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
 // SHA-256, not argon2: the token is already random and long, so a slow hash would add nothing
-function hashToken(token: string): string {
+export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 

@@ -11,6 +11,7 @@ import {
   checkIns,
   consents,
   dayPasses,
+  devices,
   doorEvents,
   memberDetails,
   members,
@@ -285,13 +286,22 @@ describe("database rules", () => {
     });
   });
 
-  it("one_time_codes: stored hashed, unique, and one recovery code at a time", () => {
+  it("one_time_codes: stored hashed, unique, and one recovery and one pairing code at a time", () => {
     expect(rules(oneTimeCodes)).toEqual({
-      uniqueIndexes: ["one_time_codes_one_recovery"],
+      uniqueIndexes: ["one_time_codes_one_recovery", "one_time_codes_one_pairing"],
       checks: ["one_time_codes_purpose", "one_time_codes_code_hash"],
       pointsAt: [],
     });
     expect(isUnique(oneTimeCodes, "code_hash")).toBe(true);
+  });
+
+  it("devices: a stored hash of the tablet's token, never the token, and nothing points at it", () => {
+    expect(rules(devices)).toEqual({
+      uniqueIndexes: [],
+      checks: ["devices_token_hash"],
+      pointsAt: [],
+    });
+    expect(isUnique(devices, "token_hash")).toBe(true);
   });
 
   it("recordColumns: points at the entering account, with a check named after the table", () => {

@@ -7,6 +7,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { RequestHandler } from "express";
 
 import { HttpError } from "../http/errors.ts";
+import { pairedDeviceOf } from "./devices.ts";
 import { signedInAs } from "./sign-in.ts";
 
 // Requests that only read. Routes must never change data on these, or this check misses them
@@ -19,13 +20,20 @@ export function sameToken(sent: string, expected: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** Mounted on /api right after loadSession: refuses a signed-in write without the right token. */
+/**
+ * Mounted on /api right after loadSession and loadDevice: refuses a write from a signed-in browser
+ * or a paired door tablet without the right token. The door tablet's scans are cookie writes too.
+ */
 export const requireCsrfToken: RequestHandler = (request, _response, next) => {
-  const signedIn = signedInAs(request);
-  // A request without a live session has no cookie power to abuse; the route guard (U3b) decides
-  // what a signed-out request may do
-  if (signedIn !== null && !READ_ONLY_METHODS.has(request.method)) {
-    if (!sameToken(request.get("X-CSRF-Token") ?? "", signedIn.csrfToken)) {
+  // One browser may hold both cookies, so the token for either one is accepted
+  const expected = [signedInAs(request)?.csrfToken, pairedDeviceOf(request)?.csrfToken].filter(
+    (token) => token !== undefined,
+  );
+  // A request with no live session or tablet cookie has no cookie power to abuse; the route
+  // guard decides what it may do
+  if (expected.length > 0 && !READ_ONLY_METHODS.has(request.method)) {
+    const sent = request.get("X-CSRF-Token") ?? "";
+    if (!expected.some((token) => sameToken(sent, token))) {
       throw new HttpError(403, "csrf_token_wrong");
     }
   }

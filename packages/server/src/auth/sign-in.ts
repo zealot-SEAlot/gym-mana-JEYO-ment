@@ -5,10 +5,11 @@ import { accounts } from "@jeyos/domain";
 import { signInSchema } from "@jeyos/shared";
 import { sql } from "drizzle-orm";
 import express from "express";
-import type { CookieOptions, Request, RequestHandler, Router } from "express";
+import type { Request, RequestHandler, Router } from "express";
 import type { z } from "zod";
 
 import type { GymDatabase } from "../db/client.ts";
+import { COOKIE_OPTIONS, readCookie } from "../http/cookies.ts";
 import { HttpError } from "../http/errors.ts";
 import { validateBody } from "../http/validate.ts";
 import { allow } from "./guard.ts";
@@ -17,18 +18,7 @@ import { clearTries, takeTry } from "./rate-limit.ts";
 import { endSession, findSession, startSession } from "./sessions.ts";
 import type { SignedIn } from "./sessions.ts";
 
-// The __Host- prefix makes the browser refuse this cookie unless it is Secure, for the whole site,
-// and set by the gym PC itself, so no other address on the network can plant one
 const COOKIE = "__Host-jeyos-session";
-
-const COOKIE_OPTIONS: CookieOptions = {
-  // Page scripts can't read it, so a script slipped into a member's name can't steal a session
-  httpOnly: true,
-  secure: true,
-  // The browser never sends it with a request that starts on another website
-  sameSite: "strict",
-  path: "/",
-};
 
 // The client sends this header on requests the user started: a click, a typed search, a saved
 // form. The desk feed can't send headers and automatic reloads leave it off, so neither keeps a
@@ -39,16 +29,6 @@ const USER_ACTION_HEADER = "X-User-Action";
 // Checked when the sign-in name matches no account, so a wrong name takes as long as a wrong
 // password and the timing can't reveal which sign-in names exist
 const NO_ACCOUNT = await hashPassword("no account has this password");
-
-function readCookie(request: Request): string | undefined {
-  for (const pair of request.get("Cookie")?.split(";") ?? []) {
-    const [name, value] = pair.trim().split("=");
-    if (name === COOKIE) {
-      return value;
-    }
-  }
-  return undefined;
-}
 
 // Who sent each request. A WeakMap lets the request be cleaned up as usual once it is answered
 const signedInByRequest = new WeakMap<Request, SignedIn>();
@@ -61,7 +41,7 @@ export function signedInAs(request: Request): SignedIn | null {
 /** Mounted on /api before every router, so each route can ask signedInAs(request). */
 export function loadSession(db: GymDatabase): RequestHandler {
   return (request, _response, next) => {
-    const token = readCookie(request);
+    const token = readCookie(request, COOKIE);
     if (token !== undefined) {
       const userStarted = request.get(USER_ACTION_HEADER) === "1";
       const signedIn = findSession(db, token, new Date(), userStarted);
@@ -115,7 +95,7 @@ export function signInRouter(db: GymDatabase): Router {
 
       // A new token on every sign-in, and the old one ended, so a token someone saw before sign-in
       // is worthless afterwards
-      const oldToken = readCookie(request);
+      const oldToken = readCookie(request, COOKIE);
       if (oldToken !== undefined) {
         endSession(db, oldToken);
       }
@@ -126,7 +106,7 @@ export function signInRouter(db: GymDatabase): Router {
   );
 
   router.post("/sign-out", allow("anyone"), (request, response) => {
-    const token = readCookie(request);
+    const token = readCookie(request, COOKIE);
     if (token !== undefined) {
       endSession(db, token);
     }

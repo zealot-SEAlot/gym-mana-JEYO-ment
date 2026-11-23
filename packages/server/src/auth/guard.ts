@@ -9,10 +9,14 @@ import type { ACCOUNT_ROLES } from "@jeyos/domain";
 import type { Express, RequestHandler, Router } from "express";
 
 import { HttpError } from "../http/errors.ts";
+import { pairedDeviceOf } from "./devices.ts";
 import { signedInAs } from "./sign-in.ts";
 
-/** Who may call a route: an account role, or "anyone", which also lets signed-out requests in. */
-export type Access = (typeof ACCOUNT_ROLES)[number] | "anyone";
+/**
+ * Who may call a route: an account role, "door" for a paired door tablet (only scan routes say
+ * this, R42), or "anyone", which also lets signed-out requests in.
+ */
+export type Access = (typeof ACCOUNT_ROLES)[number] | "door" | "anyone";
 
 // Each guard allow() made, and whom it lets in, so listRoutes can read every route's declaration
 const declarations = new WeakMap<RequestHandler, readonly Access[]>();
@@ -20,15 +24,19 @@ const declarations = new WeakMap<RequestHandler, readonly Access[]>();
 /** The guard to put first on a route. Takes at least one Access, so "nobody" can't be written by mistake. */
 export function allow(...access: [Access, ...Access[]]): RequestHandler {
   const guard: RequestHandler = (request, _response, next) => {
-    if (!access.includes("anyone")) {
-      const signedIn = signedInAs(request);
-      // 401 tells the screen to show the sign-in page; 403 tells it this account may not do this
-      if (signedIn === null) {
+    const signedIn = signedInAs(request);
+    const device = pairedDeviceOf(request);
+    const letIn =
+      access.includes("anyone") ||
+      (signedIn !== null && access.includes(signedIn.role)) ||
+      (device !== null && access.includes("door"));
+    if (!letIn) {
+      // 401 tells the screen to sign in, or the tablet to pair; 403 tells it this account or
+      // tablet may not do this
+      if (signedIn === null && device === null) {
         throw new HttpError(401, "signed_out");
       }
-      if (!access.includes(signedIn.role)) {
-        throw new HttpError(403, "not_allowed");
-      }
+      throw new HttpError(403, "not_allowed");
     }
     next();
   };

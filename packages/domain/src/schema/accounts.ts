@@ -1,6 +1,7 @@
-// Owner and staff accounts, their sessions, sign-in limits, and one-time codes (R3, R49, R50, R52,
-// KTD5). Built in U3. The accounts table came in U2's foundation migration so every core table
-// could point at it (KTD17); the other three come in U3a's own migration (schema session, block 7).
+// Owner and staff accounts, their sessions, sign-in limits, one-time codes, and paired door tablets
+// (R3, R42, R49, R50, R51, R52, KTD5). Built in U3. The accounts table came in U2's foundation migration so every core table
+// could point at it (KTD17); sessions, sign-in limits, and one-time codes came in U3a's own migration
+// (schema session, block 7), and paired door tablets (devices) in U3c's.
 import { sql } from "drizzle-orm";
 import { check, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
@@ -80,8 +81,9 @@ export const rateLimits = sqliteTable(
   ],
 );
 
-// U3c adds 'pairing' for the door tablet, with its own migration
-export const ONE_TIME_CODE_PURPOSES = ["recovery"] as const;
+// recovery: the owner's printed code (R49). pairing: the code the owner shows to pair the door
+// tablet (R51). U18 adds member access codes, with its own migration
+export const ONE_TIME_CODE_PURPOSES = ["recovery", "pairing"] as const;
 
 // Random codes a person types in once (KTD5). Only the SHA-256 hash is stored, and a used code's
 // row is deleted, so a second try finds nothing. Wrong guesses are counted in rate_limits, since a
@@ -101,7 +103,34 @@ export const oneTimeCodes = sqliteTable(
     uniqueIndex("one_time_codes_one_recovery")
       .on(table.purpose)
       .where(sql`purpose = 'recovery'`),
-    check("one_time_codes_purpose", sql`purpose IN ('recovery')`),
+    // One pairing code at a time: asking for a new one replaces the old, so a code shown earlier
+    // and forgotten on a screen stops working (R51)
+    uniqueIndex("one_time_codes_one_pairing")
+      .on(table.purpose)
+      .where(sql`purpose = 'pairing'`),
+    check("one_time_codes_purpose", sql`purpose IN ('recovery', 'pairing')`),
     check("one_time_codes_code_hash", sql`length(code_hash) = 64`),
   ],
+);
+
+// Paired door tablets (R42, R51, KTD5). The door tablet has no account: pairing gives it a random
+// token in an HttpOnly cookie, and only the token's SHA-256 hash is stored, like a session's.
+// Revoking a tablet deletes its row, so its cookie stops working on the next request. Nothing
+// points at this table, so deleting a row never touches the check-ins the tablet made
+export const devices = sqliteTable(
+  "devices",
+  {
+    id: integer("id").primaryKey(),
+    tokenHash: text("token_hash").notNull().unique(),
+    // The CSRF synchronizer token every cookie-authenticated write must send back, the door's
+    // scans included (KTD5)
+    csrfToken: text("csrf_token").notNull(),
+    // UTC text, like every time in the database
+    pairedAt: text("paired_at").notNull(),
+    // Written by each door scan (U5), so the owner can spot a tablet that stopped scanning or
+    // started scanning from an address it shouldn't have (KTD5). Empty until its first scan
+    lastScanAt: text("last_scan_at"),
+    lastScanAddress: text("last_scan_address"),
+  },
+  () => [check("devices_token_hash", sql`length(token_hash) = 64`)],
 );
