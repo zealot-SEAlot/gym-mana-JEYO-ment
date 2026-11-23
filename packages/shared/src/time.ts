@@ -4,7 +4,8 @@ import { DateTime } from "luxon";
 const MANILA = "Asia/Manila";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-export type PlanLengthUnit = "day" | "month";
+export const PLAN_LENGTH_UNITS = ["day", "month"] as const;
+export type PlanLengthUnit = (typeof PLAN_LENGTH_UNITS)[number];
 
 /** The calendar day in Manila, written as YYYY-MM-DD, for a moment in time. */
 export function manilaDate(instant: Date): string {

@@ -2,4 +2,4 @@
 export const GYM_NAME = "Jeyo's Hardhit Fitness Center";
 
 export { formatCentavos, pesosToCentavos } from "./money.ts";
-export { addPlanLength, manilaDate, type PlanLengthUnit } from "./time.ts";
+export { addPlanLength, manilaDate, PLAN_LENGTH_UNITS, type PlanLengthUnit } from "./time.ts";
