@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createApp } from "./app.ts";
+import { openTestDatabase } from "./db/test-database.ts";
 
 describe("createApp", () => {
   let folder: string;
@@ -19,7 +20,11 @@ describe("createApp", () => {
     writeFileSync(join(folder, "index.html"), "<title>client page</title>");
     writeFileSync(join(folder, "app.js"), "console.log('client script');");
 
-    server = createApp(folder).listen(0);
+    server = createApp({
+      clientDir: folder,
+      setupSecretFile: join(folder, "setup-secret.txt"),
+      db: openTestDatabase().db,
+    }).listen(0);
     await new Promise((done) => server.once("listening", done));
     baseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
   });

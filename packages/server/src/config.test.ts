@@ -24,11 +24,12 @@ describe("readConfig", () => {
     expect(() => readConfig({ JEYOS_DATA_DIR: dataDir, JEYOS_PORT: port })).toThrow("JEYOS_PORT");
   });
 
-  it("keeps the certificate and its key inside the data folder", () => {
+  it("keeps the certificate, its key, and the setup secret inside the data folder", () => {
     const config = readConfig({ JEYOS_DATA_DIR: dataDir, JEYOS_PORT: "8443" });
 
     expect(config.port).toBe(8443);
     expect(config.certFile).toBe(join(dataDir, "tls", "server.crt"));
     expect(config.keyFile).toBe(join(dataDir, "tls", "server.key"));
+    expect(config.setupSecretFile).toBe(join(dataDir, "setup-secret.txt"));
   });
 });
