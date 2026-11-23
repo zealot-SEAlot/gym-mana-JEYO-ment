@@ -122,5 +122,28 @@ describe("migrations", () => {
 
       expect(namesOf(db, "table")).toEqual(["member_details"]);
     });
+
+    it("gives member_details the same columns as the schema, so details move between files unchanged", () => {
+      const db = migrated("local-only.db", LOCAL_ONLY_MIGRATIONS);
+      const columns = db
+        .prepare<[], { name: string; type: string; notnull: number }>(
+          "SELECT name, type, \"notnull\" FROM pragma_table_info('member_details') ORDER BY cid",
+        )
+        .all()
+        // SQLite reports types in upper case (INTEGER) and notnull as 0 or 1; Drizzle uses integer and true/false
+        .map((column) => ({
+          ...column,
+          type: column.type.toLowerCase(),
+          notnull: column.notnull === 1,
+        }));
+
+      expect(columns).toEqual(
+        getTableConfig(schema.memberDetails).columns.map((column) => ({
+          name: column.name,
+          type: column.getSQLType(),
+          notnull: column.notNull,
+        })),
+      );
+    });
   });
 });
