@@ -173,6 +173,15 @@ body > #root > main,
   min-width: 0;
 }
 
+/* The door tablet's pairing code, big enough to read across the desk */
+.pairing-code {
+  font-family: ui-monospace, monospace;
+  font-size: 1.75rem;
+  letter-spacing: 0.1em;
+  /* Lets a long code break at its dashes on a phone */
+  overflow-wrap: anywhere;
+}
+
 .sections {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));

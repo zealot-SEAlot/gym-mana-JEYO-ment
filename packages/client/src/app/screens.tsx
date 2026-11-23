@@ -7,6 +7,7 @@
 import type { AccountRole } from "@jeyos/shared";
 import type { ReactNode } from "react";
 
+import { DevicesPage } from "../owner/DevicesPage.tsx";
 import { StaffPage } from "../owner/StaffPage.tsx";
 
 export type ScreenGroup = "desk" | "owner";
@@ -39,4 +40,5 @@ export function screensFor(role: AccountRole, screens: readonly Screen[]): Scree
 
 export const SCREENS: readonly Screen[] = [
   { path: "/owner/staff", label: "Staff", group: "owner", element: <StaffPage /> },
+  { path: "/owner/devices", label: "Devices", group: "owner", element: <DevicesPage /> },
 ];
