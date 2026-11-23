@@ -1,4 +1,11 @@
-// The Express app that runs on the gym PC. U2 replaces this placeholder.
-import { GYM_NAME } from "@jeyos/shared";
+// Starts the server on the gym PC: read config, build the app, serve it over HTTPS.
+import { createApp } from "./app.ts";
+import { readConfig } from "./config.ts";
+import { createHttpsServer } from "./https.ts";
 
-console.log(`${GYM_NAME} server placeholder, running on Node ${process.version}`);
+const config = readConfig(process.env);
+const server = createHttpsServer(createApp(config.clientDir), config);
+
+server.listen(config.port, () => {
+  console.log(`Jeyo's server listening on https://localhost:${config.port}/`);
+});
