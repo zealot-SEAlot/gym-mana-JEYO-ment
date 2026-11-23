@@ -524,7 +524,7 @@ ops/                             install, device setup, update, power-cut, backu
 | No off-site copy exists if cloud backup is cut for time | A disk failure loses data since the last update copy | Copies before each update (U20); routine backup stays in the extras, as decided at review |
 | Certificate trust must be set up per device and expires in about two years | Camera blocked or security warnings | Device setup guide with the extra iOS trust step, and the renewal date on the System Status screen (U14, U20) |
 | The data folder sits inside OneDrive or another synced folder | Database corruption | Install check, and a warning on the System Status screen (U14, U20) |
-| Native modules (`better-sqlite3`, `argon2`, `sharp`) fail to install on the gym PC | Install blocked | Prebuilt Windows binaries, a Windows install check in U1, and the `bcryptjs` fallback (KTD5) |
+| Native modules (`better-sqlite3`, `argon2`, `sharp`) fail to install on the gym PC | Install blocked | Prebuilt Windows binaries, `ignore-scripts` in `.npmrc` so npm never tries to compile them, a Windows install check in U1, and the `bcryptjs` fallback (KTD5) |
 | Fast-moving dependencies: Drizzle is pre-1.0 and TypeScript 7 is a new compiler | Breaking changes mid-semester | Exact pins, a committed lockfile, and a toolchain check in U1 |
 | Browsers cannot print without a dialog at closing time | Closing list not printed on its own | Desk prompt at closing time, plus the optional kiosk printing setting documented in U14 |
 | Erased members' data survives in replicas, old photos, or pre-update copies | Erasure incomplete | `secure_delete`, deletion of current bucket objects with 14-day version expiry, and pre-update copies deleted after 14 days (KTD2, KTD13, KTD17, U8, U16, U20) |

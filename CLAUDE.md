@@ -45,6 +45,7 @@ Five npm workspaces (KTD16). ESLint enforces which may import which.
 ## Conventions
 
 - Every dependency version is exact (`.npmrc` sets `save-exact`). Check the npm registry for current versions instead of relying on memory.
+- `.npmrc` sets `ignore-scripts`, so dependency install scripts never run. Without it, `npm ci` runs `node-gyp rebuild` for `better-sqlite3`, because npm spots its `binding.gyp` and the lockfile does not record its `"gypfile": false`, and that build fails on PCs without Visual Studio. Native dependencies must ship prebuilt Windows binaries.
 - TypeScript is pinned to 6.0.3 because typescript-eslint 8.70 supports only TypeScript below 6.1. Move to TypeScript 7 once it does.
 - Node 24 runs the server's `.ts` files by stripping the types, so `tsconfig.base.json` bans what it cannot strip: no `enum` or `namespace`, `import type` for type-only imports, and `.ts` extensions on relative imports (`./money.ts`).
 - `shared` and `domain` get neither Node nor browser globals, so their code runs in both places.
