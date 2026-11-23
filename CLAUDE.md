@@ -8,7 +8,7 @@ Jeyo's Hardhit Fitness Center gym management system, a three-student capstone. T
 - **Only the team uses Git and GitHub.** Never commit, push, open or merge pull requests, or change repository settings, and never run workflows that do those things on their own. Leave changes in the working tree and give the exact commands, one per `bash` block.
 - **Never commit gym data:** database files, member photos, certificates, keys, or `.env` files.
 - If a change alters a decision in the plan, update the plan in the same pull request.
-- Each pull request carries at most one database migration (KTD17).
+- Each pull request carries at most one migration for each database file: the gym database and the local-only file (KTD17).
 
 ## Commands
 
@@ -24,8 +24,9 @@ Jeyo's Hardhit Fitness Center gym management system, a three-student capstone. T
 | `npm run build` | Build every package that has a build step |
 | `npm run dev --workspace @jeyos/client` | Vite development server |
 | `npm run dev --workspace @jeyos/server` | Run the server with Node, restarting on save |
+| `npm run db:generate --workspace @jeyos/server` | Write the migrations for both database files after a schema change |
 
-CI (`.github/workflows/ci.yml`) runs on every pull request: typecheck, lint, format check, coverage, build, the Playwright tests, and `npm audit` on Windows, plus a gitleaks secret scan and a check that blocks binary files outside `e2e/fixtures/`.
+CI (`.github/workflows/ci.yml`) runs on every pull request: typecheck, lint, format check, coverage, build, the Playwright tests, `npm audit`, and a check that the migrations match the schema, on Windows. It also runs a gitleaks secret scan and checks that block binary files outside `e2e/fixtures/`, SQL files outside `packages/server/src/db/migrations/`, and more than one new migration per database file.
 
 ## Layout
 
