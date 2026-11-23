@@ -1,4 +1,4 @@
-// The append-only audit log (KTD9, U2 plan step 7). The triggers in migration 0001_audit_triggers
+// The append-only audit log (KTD9, U2 plan step 7). The triggers in migration 0001_triggers
 // refuse every update and delete on the audit tables, except an erasure's redaction (R62).
 import { auditLog, auditPersonalValues } from "@jeyos/domain";
 import type { AUDIT_ACTIONS } from "@jeyos/domain";
