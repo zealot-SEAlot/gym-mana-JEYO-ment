@@ -91,6 +91,11 @@ export function LoginPage({ onSignedIn }: { onSignedIn: (signedIn: SignedIn) => 
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      {/* Both work only on the gym PC itself; the server refuses them from anywhere else */}
+      <p>
+        On the gym PC: <a href="/setup">set up the owner account</a> on a new install, or{" "}
+        <a href="/recover">use the recovery code</a> if the owner password is forgotten.
+      </p>
     </main>
   );
 }

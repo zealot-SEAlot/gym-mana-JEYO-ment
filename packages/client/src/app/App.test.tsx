@@ -34,6 +34,15 @@ describe("App", () => {
     expect(screen.queryByRole("heading", { name: "Sign in" })).toBeNull();
   });
 
+  it.each([
+    ["/setup", "Set up the owner account"],
+    ["/recover", "Forgot the owner password"],
+  ])("shows %s with no sign-in", async (path, heading) => {
+    renderAt(path);
+
+    expect(await screen.findByRole("heading", { name: heading })).toBeDefined();
+  });
+
   it("sends every other address to the signed-in shell", async () => {
     renderAt("/owner/staff");
 

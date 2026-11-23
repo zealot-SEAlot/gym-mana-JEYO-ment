@@ -65,6 +65,17 @@ describe("LoginPage", () => {
     );
   });
 
+  it("links to owner setup and recovery for the gym PC", () => {
+    render(<LoginPage onSignedIn={vi.fn()} />);
+
+    expect(
+      screen.getByRole("link", { name: "set up the owner account" }).getAttribute("href"),
+    ).toBe("/setup");
+    expect(screen.getByRole("link", { name: "use the recovery code" }).getAttribute("href")).toBe(
+      "/recover",
+    );
+  });
+
   it("names the empty fields and sends nothing", () => {
     render(<LoginPage onSignedIn={vi.fn()} />);
 
