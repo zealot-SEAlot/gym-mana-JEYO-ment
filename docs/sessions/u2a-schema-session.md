@@ -267,5 +267,5 @@ Add to this list during the session.
 
 | Question | Who follows up | By when |
 |---|---|---|
-| Which contact details should members give: phone, email, or both? | Team, with the owner | Before U4 |
+| Which contact details should members give: phone, email, or both? Settled for U4 by the team: a Philippine mobile number is required and email is optional, because reminders go by text (U19). The owner confirms before go-live. | Team, with the owner | Before go-live (U21) |
 | For members carried over from the logbook, how do they give consent (R8, R44)? | Team, with the owner | Before go-live (U21) |

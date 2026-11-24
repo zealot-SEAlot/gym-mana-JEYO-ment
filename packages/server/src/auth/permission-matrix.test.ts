@@ -39,6 +39,10 @@ const EXPECTED: Record<string, Access[]> = {
   "POST /api/devices/pair": ["anyone"],
   // The tablet's own check that it is still paired
   "GET /api/devices/this": ["door"],
+  // Member details are for the desk: never the door tablet (R42, R54) or a signed-out request
+  "POST /api/members": ["owner", "staff"],
+  "GET /api/members/:id": ["owner", "staff"],
+  "GET /api/members/:id/qr.svg": ["owner", "staff"],
   "GET /{*path}": ["anyone"],
 };
 
@@ -53,11 +57,16 @@ const GUARD_REFUSALS = new Set(["signed_out", "not_allowed"]);
 // Built when the file loads, so it.each below can list the routes as separate tests
 const folder = mkdtempSync(join(tmpdir(), "jeyos-matrix-test-"));
 writeFileSync(join(folder, "index.html"), "<title>client page</title>");
-const { sqlite, db } = openTestDatabase();
+const { sqlite, db, localOnlyDb } = openTestDatabase();
 sqlite.exec(
   "INSERT INTO accounts (id, display_name, sign_in_name, role, password_hash, password_hash_method) VALUES (2, 'Lee', 'lee', 'staff', 'hash', 'argon2id')",
 );
-const app = createApp({ clientDir: folder, setupSecretFile: join(folder, "setup-secret.txt"), db });
+const app = createApp({
+  clientDir: folder,
+  setupSecretFile: join(folder, "setup-secret.txt"),
+  db,
+  localOnlyDb,
+});
 const routes = listRoutes(app);
 
 // Every route, called by every requester

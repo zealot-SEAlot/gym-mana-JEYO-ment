@@ -32,7 +32,14 @@ export function openDatabase(filePath: string): Database.Database {
   return db;
 }
 
+/**
+ * The local-only file: personal details of members who declined the online backup (KTD13, R8).
+ * Same shape as GymDatabase, so the same Drizzle queries work on either file
+ */
+export type LocalOnlyDatabase = GymDatabase;
+
 const GYM_MIGRATIONS = fileURLToPath(new URL("./migrations/gym", import.meta.url));
+const LOCAL_ONLY_MIGRATIONS = fileURLToPath(new URL("./migrations/local-only", import.meta.url));
 
 /**
  * Opens the gym database and brings it up to the newest migration, for the server and the tests.
@@ -41,5 +48,16 @@ const GYM_MIGRATIONS = fileURLToPath(new URL("./migrations/gym", import.meta.url
 export function openGymDatabase(filePath: string): GymDatabase {
   const db = drizzle({ client: openDatabase(filePath) });
   migrate(db, { migrationsFolder: GYM_MIGRATIONS });
+  return db;
+}
+
+/**
+ * Opens the local-only file the same way: same settings, its own migrations (KTD17). Litestream
+ * never copies this file, so these members' details stay off the online backup. A separate
+ * connection, not SQLite's ATTACH, because Drizzle can't name an attached file's tables
+ */
+export function openLocalOnlyDatabase(filePath: string): LocalOnlyDatabase {
+  const db = drizzle({ client: openDatabase(filePath) });
+  migrate(db, { migrationsFolder: LOCAL_ONLY_MIGRATIONS });
   return db;
 }

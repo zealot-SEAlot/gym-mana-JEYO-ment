@@ -5,6 +5,7 @@ import type Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createApp } from "../app.ts";
+import { openLocalOnlyDatabase } from "../db/client.ts";
 import type { GymDatabase } from "../db/client.ts";
 import { openTestDatabase } from "../db/test-database.ts";
 import { startSession } from "./sessions.ts";
@@ -23,7 +24,12 @@ describe("staff accounts", () => {
   beforeEach(async () => {
     ({ sqlite, db } = openTestDatabase());
     // The staff routes never read the client build or the setup secret, so neither file exists
-    server = createApp({ clientDir: "no-client", setupSecretFile: "no-secret", db }).listen(0);
+    server = createApp({
+      clientDir: "no-client",
+      setupSecretFile: "no-secret",
+      db,
+      localOnlyDb: openLocalOnlyDatabase(":memory:"),
+    }).listen(0);
     await new Promise((done) => server.once("listening", done));
     baseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
     // The test database's owner has no real password, so the session is started directly

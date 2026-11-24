@@ -9,7 +9,7 @@ import type Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createApp } from "../app.ts";
-import { openGymDatabase } from "../db/client.ts";
+import { openGymDatabase, openLocalOnlyDatabase } from "../db/client.ts";
 import { hashCode } from "./one-time-codes.ts";
 
 // Built with repeat, so CI's secret scanner (gitleaks) can't mistake a test value for a real key
@@ -45,6 +45,7 @@ describe("owner setup", () => {
       clientDir: folder,
       setupSecretFile: join(folder, "setup-secret.txt"),
       db,
+      localOnlyDb: openLocalOnlyDatabase(":memory:"),
     }).listen(0, "0.0.0.0");
     await new Promise((done) => server.once("listening", done));
     port = (server.address() as AddressInfo).port;

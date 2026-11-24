@@ -10,8 +10,8 @@ export const memberDetails = sqliteTable("member_details", {
   memberId: integer("member_id").primaryKey(),
   // Only the owner can change the name (R59)
   name: text("name").notNull(),
-  // Which contact details are required is still open with the owner (decision log, "Still open"),
-  // so both may be empty for now and U4's form decides
+  // U4's form requires a mobile number and leaves email optional (decision log, "Still open").
+  // The column allows empty so an erasure (R62) and the owner's final answer need no migration
   phone: text("phone"),
   email: text("email"),
   // The server-generated file name in the photos folder. Empty when the member declined a photo (R8)
