@@ -18,18 +18,20 @@ import { membersRouter } from "./members/members.routes.ts";
 /**
  * Builds the app. clientDir is the folder Vite builds the client into (packages/client/dist), and
  * setupSecretFile is the install script's secret for owner setup. localOnlyDb is the local-only
- * file for members who declined the online backup (KTD13).
+ * file for members who declined the online backup (KTD13), and photosDir holds member photos.
  */
 export function createApp({
   clientDir,
   setupSecretFile,
   db,
   localOnlyDb,
+  photosDir,
 }: {
   clientDir: string;
   setupSecretFile: string;
   db: GymDatabase;
   localOnlyDb: LocalOnlyDatabase;
+  photosDir: string;
 }): Express {
   const app = express();
   const indexFile = join(resolve(clientDir), "index.html");
@@ -53,7 +55,7 @@ export function createApp({
   api.use("/setup", setupRouter(db, setupSecretFile));
   api.use("/staff", staffRouter(db));
   api.use("/devices", devicesRouter(db));
-  api.use("/members", membersRouter(db, localOnlyDb));
+  api.use("/members", membersRouter(db, localOnlyDb, photosDir));
   api.use(() => {
     throw new HttpError(404, "not_found");
   });
