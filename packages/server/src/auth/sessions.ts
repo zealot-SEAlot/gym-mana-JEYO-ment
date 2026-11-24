@@ -4,7 +4,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { accounts, sessions } from "@jeyos/domain";
-import type { ACCOUNT_ROLES } from "@jeyos/domain";
+import type { AccountRole } from "@jeyos/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -22,7 +22,7 @@ export const sessionIdleMinutes = registerSetting(
 /** Who a session belongs to, for the route guard and for the names copied onto records (R50). */
 export interface SignedIn {
   accountId: number;
-  role: (typeof ACCOUNT_ROLES)[number];
+  role: AccountRole;
   displayName: string;
   csrfToken: string;
 }

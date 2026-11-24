@@ -2,10 +2,9 @@
 // (R3, R42, R49, R50, R51, R52, KTD5). Built in U3. The accounts table came in U2's foundation migration so every core table
 // could point at it (KTD17); sessions, sign-in limits, and one-time codes came in U3a's own migration
 // (schema session, block 7), and paired door tablets (devices) in U3c's.
+import { ACCOUNT_ROLES } from "@jeyos/shared";
 import { sql } from "drizzle-orm";
 import { check, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-
-export const ACCOUNT_ROLES = ["owner", "staff"] as const;
 
 // KTD5: argon2id normally, bcrypt only if the argon2 native install fails
 export const PASSWORD_HASH_METHODS = ["argon2id", "bcrypt"] as const;

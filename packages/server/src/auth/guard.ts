@@ -5,7 +5,7 @@
 //
 // A route without that declaration stops createApp with an error, so a forgotten one can never
 // answer a request. Hiding a button in the React app is not access control; this is.
-import type { ACCOUNT_ROLES } from "@jeyos/domain";
+import type { AccountRole } from "@jeyos/shared";
 import type { Express, RequestHandler, Router } from "express";
 
 import { HttpError } from "../http/errors.ts";
@@ -16,7 +16,7 @@ import { signedInAs } from "./sign-in.ts";
  * Who may call a route: an account role, "door" for a paired door tablet (only scan routes say
  * this, R42), or "anyone", which also lets signed-out requests in.
  */
-export type Access = (typeof ACCOUNT_ROLES)[number] | "door" | "anyone";
+export type Access = AccountRole | "door" | "anyone";
 
 // Each guard allow() made, and whom it lets in, so listRoutes can read every route's declaration
 const declarations = new WeakMap<RequestHandler, readonly Access[]>();
