@@ -9,6 +9,7 @@ export {
   updateStaffSchema,
 } from "./accounts.ts";
 export { pairDeviceSchema } from "./devices.ts";
+export { CONSENT_TEXT, type RegisterMember, registerMemberSchema } from "./members.ts";
 export { ACCOUNT_ROLES, type AccountRole } from "./roles.ts";
 export { formatCentavos, pesosToCentavos } from "./money.ts";
 export { passwordSchema } from "./password.ts";
