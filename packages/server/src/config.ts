@@ -9,6 +9,8 @@ export type Config = {
   keyFile: string;
   /** The secret the install script writes, which owner setup asks for (R49, KTD5) */
   setupSecretFile: string;
+  /** Member photos, under server-made names, served only through guarded routes (KTD2, KTD6) */
+  photosDir: string;
   /** The built client pages */
   clientDir: string;
 };
@@ -33,6 +35,7 @@ export function readConfig(env: Record<string, string | undefined>): Config {
     certFile: join(dataDir, "tls", "server.crt"),
     keyFile: join(dataDir, "tls", "server.key"),
     setupSecretFile: join(dataDir, "setup-secret.txt"),
+    photosDir: join(dataDir, "photos"),
     clientDir: resolve(import.meta.dirname, "../../client/dist"),
   };
 }

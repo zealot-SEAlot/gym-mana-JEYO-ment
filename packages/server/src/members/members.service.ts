@@ -70,12 +70,11 @@ export function registerMember(
   });
 }
 
-/** A member with their details, or null for an id that doesn't exist or was erased (R62). */
-export function findMember(
-  gym: GymDatabase,
-  localOnly: LocalOnlyDatabase,
-  id: number,
-): Member | null {
+/**
+ * Where a member's details live and what they say, or null for an id that doesn't exist or was
+ * erased (R62). onlineBackup says which file: photos.ts uses it to pick the photo folder too.
+ */
+export function findDetails(gym: GymDatabase, localOnly: LocalOnlyDatabase, id: number) {
   const member = gym
     .select({ code: members.code, onlineBackup: consents.onlineBackup })
     .from(members)
@@ -90,17 +89,28 @@ export function findMember(
   }
   // Read from the file the newest answer points at, never "whichever has a row": a row left
   // behind in the other file must not show
-  const details = (member.onlineBackup ? gym : localOnly)
-    .select()
-    .from(memberDetails)
-    .where(eq(memberDetails.memberId, id))
-    .get();
+  const file = member.onlineBackup ? gym : localOnly;
+  const details = file.select().from(memberDetails).where(eq(memberDetails.memberId, id)).get();
   if (details === undefined) {
     return null;
   }
+  return { file, onlineBackup: member.onlineBackup, code: member.code!, details };
+}
+
+/** A member with their details, or null for an id that doesn't exist or was erased (R62). */
+export function findMember(
+  gym: GymDatabase,
+  localOnly: LocalOnlyDatabase,
+  id: number,
+): Member | null {
+  const found = findDetails(gym, localOnly, id);
+  if (found === null) {
+    return null;
+  }
+  const { code, details } = found;
   return {
     id,
-    code: member.code!,
+    code,
     name: details.name,
     phone: details.phone,
     email: details.email,
