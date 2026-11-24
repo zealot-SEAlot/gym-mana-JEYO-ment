@@ -24,6 +24,7 @@ describe("createApp", () => {
       clientDir: folder,
       setupSecretFile: join(folder, "setup-secret.txt"),
       ...openTestDatabase(),
+      photosDir: join(folder, "photos"),
     }).listen(0);
     await new Promise((done) => server.once("listening", done));
     baseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;

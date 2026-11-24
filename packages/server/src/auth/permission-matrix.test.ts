@@ -43,6 +43,9 @@ const EXPECTED: Record<string, Access[]> = {
   "POST /api/members": ["owner", "staff"],
   "GET /api/members/:id": ["owner", "staff"],
   "GET /api/members/:id/qr.svg": ["owner", "staff"],
+  // Faces too: the door gets a photo only inside its own scan answer (U5)
+  "POST /api/members/:id/photo": ["owner", "staff"],
+  "GET /api/members/:id/photo": ["owner", "staff"],
   "GET /{*path}": ["anyone"],
 };
 
@@ -66,6 +69,7 @@ const app = createApp({
   setupSecretFile: join(folder, "setup-secret.txt"),
   db,
   localOnlyDb,
+  photosDir: join(folder, "photos"),
 });
 const routes = listRoutes(app);
 

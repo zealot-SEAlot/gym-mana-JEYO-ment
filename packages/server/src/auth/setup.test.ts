@@ -46,6 +46,7 @@ describe("owner setup", () => {
       setupSecretFile: join(folder, "setup-secret.txt"),
       db,
       localOnlyDb: openLocalOnlyDatabase(":memory:"),
+      photosDir: join(folder, "photos"),
     }).listen(0, "0.0.0.0");
     await new Promise((done) => server.once("listening", done));
     port = (server.address() as AddressInfo).port;

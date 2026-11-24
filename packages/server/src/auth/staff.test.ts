@@ -29,6 +29,7 @@ describe("staff accounts", () => {
       setupSecretFile: "no-secret",
       db,
       localOnlyDb: openLocalOnlyDatabase(":memory:"),
+      photosDir: "no-photos",
     }).listen(0);
     await new Promise((done) => server.once("listening", done));
     baseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
