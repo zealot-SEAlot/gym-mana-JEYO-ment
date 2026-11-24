@@ -53,6 +53,13 @@ describe("sessions", () => {
     expect(findSession(db, token, minutesLater(32), true)).toBeNull();
   });
 
+  it("signs out a session whose last-active time can't be read", () => {
+    const { token } = startSession(db, 1, START);
+    sqlite.prepare("UPDATE sessions SET last_active_at = 'garbage'").run();
+
+    expect(findSession(db, token, START, true)).toBeNull();
+  });
+
   it("restarts the idle clock on requests the user starts", () => {
     const { token } = startSession(db, 1, START);
 

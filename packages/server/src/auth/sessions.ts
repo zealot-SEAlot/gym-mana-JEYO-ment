@@ -88,7 +88,8 @@ export function findSession(
   }
 
   const idleMs = now.getTime() - Date.parse(row.lastActiveAt);
-  if (row.disabled || idleMs > readSetting(db, sessionIdleMinutes) * 60_000) {
+  // Written as "not within the limit", so a last_active_at that doesn't parse (NaN) ends the session
+  if (row.disabled || !(idleMs <= readSetting(db, sessionIdleMinutes) * 60_000)) {
     // Delete it now, so an old cookie can never come back, even if the timeout is raised later
     db.delete(sessions).where(eq(sessions.tokenHash, tokenHash)).run();
     return null;

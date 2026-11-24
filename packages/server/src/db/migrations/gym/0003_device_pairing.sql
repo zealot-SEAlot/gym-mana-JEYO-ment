@@ -9,7 +9,6 @@ CREATE TABLE `devices` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `devices_token_hash_unique` ON `devices` (`token_hash`);--> statement-breakpoint
-PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_one_time_codes` (
 	`id` integer PRIMARY KEY NOT NULL,
 	`purpose` text NOT NULL,
@@ -23,7 +22,6 @@ CREATE TABLE `__new_one_time_codes` (
 INSERT INTO `__new_one_time_codes`("id", "purpose", "code_hash", "created_at", "expires_at") SELECT "id", "purpose", "code_hash", "created_at", "expires_at" FROM `one_time_codes`;--> statement-breakpoint
 DROP TABLE `one_time_codes`;--> statement-breakpoint
 ALTER TABLE `__new_one_time_codes` RENAME TO `one_time_codes`;--> statement-breakpoint
-PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `one_time_codes_code_hash_unique` ON `one_time_codes` (`code_hash`);--> statement-breakpoint
 CREATE UNIQUE INDEX `one_time_codes_one_recovery` ON `one_time_codes` (`purpose`) WHERE purpose = 'recovery';--> statement-breakpoint
 CREATE UNIQUE INDEX `one_time_codes_one_pairing` ON `one_time_codes` (`purpose`) WHERE purpose = 'pairing';
