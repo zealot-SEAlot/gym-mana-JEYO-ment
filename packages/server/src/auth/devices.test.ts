@@ -6,6 +6,7 @@ import type Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createApp } from "../app.ts";
+import { openLocalOnlyDatabase } from "../db/client.ts";
 import type { GymDatabase } from "../db/client.ts";
 import { openTestDatabase } from "../db/test-database.ts";
 import { hashToken, randomToken, startSession } from "./sessions.ts";
@@ -22,7 +23,12 @@ describe("door tablets", () => {
 
   beforeEach(async () => {
     ({ sqlite, db } = openTestDatabase());
-    server = createApp({ clientDir: "no-client", setupSecretFile: "no-secret", db }).listen(0);
+    server = createApp({
+      clientDir: "no-client",
+      setupSecretFile: "no-secret",
+      db,
+      localOnlyDb: openLocalOnlyDatabase(":memory:"),
+    }).listen(0);
     await new Promise((done) => server.once("listening", done));
     baseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
     // A tablet paired straight in the database, for the tests that aren't about pairing itself
