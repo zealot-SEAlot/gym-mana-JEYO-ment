@@ -1,8 +1,9 @@
 // The desk's member routes (R8, R9, U4), mounted at /api/members. Owner and staff both register
 // members; nobody else may see member data, so the door tablet and signed-out requests are refused.
 // U8 adds edits, photo replacement, and erasure.
-import { registerMemberSchema } from "@jeyos/shared";
+import { carryOverExpirySchema, registerMemberSchema } from "@jeyos/shared";
 import type { RegisterMember } from "@jeyos/shared";
+import type { z } from "zod";
 import express from "express";
 import type { Request, Router } from "express";
 import { renderSVG } from "uqr";
@@ -12,6 +13,7 @@ import { signedInAs } from "../auth/sign-in.ts";
 import type { GymDatabase, LocalOnlyDatabase } from "../db/client.ts";
 import { HttpError } from "../http/errors.ts";
 import { validateBody } from "../http/validate.ts";
+import { carryOverExpiry, expiryOf } from "../membership/ledger.ts";
 import { findMember, registerMember } from "./members.service.ts";
 import type { Member } from "./members.service.ts";
 import { memberPhotoPath, PHOTO_MAX_BYTES, preparePhoto, saveMemberPhoto } from "./photos.ts";
@@ -26,7 +28,10 @@ function memberFrom(gym: GymDatabase, localOnly: LocalOnlyDatabase, request: Req
   return member;
 }
 
-/** POST /, GET /:id, GET /:id/qr.svg, POST /:id/photo, and GET /:id/photo. photosDir is config.photosDir. */
+/**
+ * POST /, GET /:id, GET /:id/qr.svg, POST /:id/photo, GET /:id/photo, and
+ * POST /:id/carried-over-expiry. photosDir is config.photosDir.
+ */
 export function membersRouter(
   gym: GymDatabase,
   localOnly: LocalOnlyDatabase,
@@ -52,8 +57,10 @@ export function membersRouter(
     },
   );
 
+  // expiresOn is worked out from the ledger on every read, never stored (KTD8)
   router.get("/:id", allow("owner", "staff"), (request, response) => {
-    response.json(memberFrom(gym, localOnly, request));
+    const member = memberFrom(gym, localOnly, request);
+    response.json({ ...member, expiresOn: expiryOf(gym, member.id) });
   });
 
   // The card's QR code as a picture (R9). Error correction M still reads with a scratched or
@@ -103,6 +110,25 @@ export function membersRouter(
       }
     });
   });
+
+  // The owner copies an existing member's expiry from the logbook or wall list (R44). Owner only:
+  // staff can't make someone active without a payment (R4)
+  router.post(
+    "/:id/carried-over-expiry",
+    allow("owner"),
+    validateBody(carryOverExpirySchema),
+    (request, response) => {
+      const { expiresOn } = request.body as z.infer<typeof carryOverExpirySchema>;
+      const id = Number(request.params.id);
+      const result = Number.isSafeInteger(id)
+        ? carryOverExpiry(gym, id, expiresOn, signedInAs(request)!, new Date())
+        : "member_not_found";
+      if (result !== "saved") {
+        throw new HttpError(result === "already_carried_over" ? 409 : 404, result);
+      }
+      response.status(204).end();
+    },
+  );
 
   return router;
 }

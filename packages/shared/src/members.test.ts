@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { CONSENT_TEXT, registerMemberSchema } from "./members.ts";
+import { carryOverExpirySchema, CONSENT_TEXT, registerMemberSchema } from "./members.ts";
 
 // A filled-in form that passes; each test changes one thing
 const form = {
@@ -71,4 +71,19 @@ describe("registerMemberSchema", () => {
       consentTextVersion: ["Reload the page to see the current consent text"],
     });
   });
+});
+
+describe("carryOverExpirySchema", () => {
+  it.each([["2026-10-30"], ["2028-02-29"], ["2020-01-01"]])("accepts %s", (expiresOn) => {
+    expect(carryOverExpirySchema.parse({ expiresOn })).toEqual({ expiresOn });
+  });
+
+  it.each([["2026-02-30"], ["2027-02-29"], ["30/10/2026"], ["2026-10-30T00:00:00Z"], [""]])(
+    "refuses %j",
+    (expiresOn) => {
+      expect(
+        z.flattenError(carryOverExpirySchema.safeParse({ expiresOn }).error!).fieldErrors,
+      ).toEqual({ expiresOn: ["Enter a date like 2026-10-30"] });
+    },
+  );
 });
