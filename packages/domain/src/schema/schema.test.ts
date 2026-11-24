@@ -11,12 +11,15 @@ import {
   checkIns,
   consents,
   dayPasses,
+  devices,
   doorEvents,
   memberDetails,
   members,
+  oneTimeCodes,
   payments,
   plans,
   products,
+  rateLimits,
   recordChecks,
   recordColumns,
   rejections,
@@ -24,6 +27,7 @@ import {
   saleLineAddOns,
   saleLines,
   sales,
+  sessions,
   settings,
   stockMovements,
   systemState,
@@ -264,6 +268,40 @@ describe("database rules", () => {
       checks: ["system_state_one_row", "system_state_confirmed_together"],
       pointsAt: ["accounts"],
     });
+  });
+
+  it("sessions: a stored hash of the cookie's token, never the token, for one account", () => {
+    expect(rules(sessions)).toEqual({
+      uniqueIndexes: [],
+      checks: ["sessions_token_hash"],
+      pointsAt: ["accounts"],
+    });
+  });
+
+  it("rate_limits: keys that name what is guessed, and only real failures", () => {
+    expect(rules(rateLimits)).toEqual({
+      uniqueIndexes: [],
+      checks: ["rate_limits_key_has_kind", "rate_limits_failed_attempts"],
+      pointsAt: [],
+    });
+  });
+
+  it("one_time_codes: stored hashed, unique, and one recovery and one pairing code at a time", () => {
+    expect(rules(oneTimeCodes)).toEqual({
+      uniqueIndexes: ["one_time_codes_one_recovery", "one_time_codes_one_pairing"],
+      checks: ["one_time_codes_purpose", "one_time_codes_code_hash"],
+      pointsAt: [],
+    });
+    expect(isUnique(oneTimeCodes, "code_hash")).toBe(true);
+  });
+
+  it("devices: a stored hash of the tablet's token, never the token, and nothing points at it", () => {
+    expect(rules(devices)).toEqual({
+      uniqueIndexes: [],
+      checks: ["devices_token_hash"],
+      pointsAt: [],
+    });
+    expect(isUnique(devices, "token_hash")).toBe(true);
   });
 
   it("recordColumns: points at the entering account, with a check named after the table", () => {

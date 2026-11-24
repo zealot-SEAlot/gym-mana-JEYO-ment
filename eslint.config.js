@@ -42,6 +42,11 @@ export default defineConfig(
         projectService: true,
       },
     },
+    rules: {
+      // An argument named with a leading _ is unused on purpose. Express knows an error handler
+      // only by its four arguments, so it must accept _next even when it never calls it
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    },
   },
   {
     // Config files at the repo root belong to no package's tsconfig, so they skip type-aware rules
