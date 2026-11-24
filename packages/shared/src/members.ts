@@ -62,3 +62,10 @@ export const registerMemberSchema = z
   });
 
 export type RegisterMember = z.infer<typeof registerMemberSchema>;
+
+// The owner copies an existing member's expiry date from the logbook or wall list (R44). Any real
+// calendar day: a past one just means the member has already expired. The desk's date box sends
+// YYYY-MM-DD, the form every Manila date takes (R55)
+export const carryOverExpirySchema = z.object({
+  expiresOn: z.iso.date("Enter a date like 2026-10-30"),
+});

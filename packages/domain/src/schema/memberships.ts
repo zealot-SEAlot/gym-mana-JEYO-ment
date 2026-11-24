@@ -12,7 +12,8 @@ import { plans } from "./plans.ts";
 import { recordChecks, recordColumns } from "./record-columns.ts";
 
 // An expiry date the owner copies from the logbook or wall list for an existing member (R44).
-// No payment, so it adds nothing to income. Only the owner may enter one; U4's service checks that
+// No payment, so it adds nothing to income. Only the owner may enter one: U4's route allows only
+// the owner (KTD6)
 export const carriedOverExpiries = sqliteTable(
   "carried_over_expiries",
   {
