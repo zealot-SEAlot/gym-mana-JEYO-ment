@@ -101,6 +101,26 @@ describe("migrations", () => {
       expect(() => addStaffAccount(db, "lee")).toThrow("UNIQUE constraint failed");
     });
 
+    it("keeps one recovery code at a time, and refuses a code stored as anything but its hash", () => {
+      const db = migrated("gym.db", GYM_MIGRATIONS);
+      const addRecoveryCode = (codeHash: string) =>
+        db
+          .prepare(
+            "INSERT INTO one_time_codes (purpose, code_hash, created_at, expires_at) VALUES ('recovery', ?, '2026-11-23T02:00:00.000Z', '2027-11-23T02:00:00.000Z')",
+          )
+          .run(codeHash);
+
+      addRecoveryCode("a".repeat(64));
+      expect(() => addRecoveryCode("b".repeat(64))).toThrow(
+        "UNIQUE constraint failed: one_time_codes.purpose",
+      );
+      db.exec("DELETE FROM one_time_codes");
+      // A plain 12-character code typed in by mistake, instead of its 64-character SHA-256
+      expect(() => addRecoveryCode("ABCD-EFGH-JK")).toThrow(
+        "CHECK constraint failed: one_time_codes_code_hash",
+      );
+    });
+
     it("refuses an e-wallet reference already on file, ignoring spaces and case, unless voided", () => {
       const db = migrated("gym.db", GYM_MIGRATIONS);
       addStaffAccount(db, "Lee");

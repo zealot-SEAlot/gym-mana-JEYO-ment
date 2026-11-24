@@ -4,11 +4,26 @@ import { join, resolve } from "node:path";
 import express from "express";
 import type { Express } from "express";
 
+import { requireCsrfToken } from "./auth/csrf.ts";
+import { setupRouter } from "./auth/setup.ts";
+import { loadSession, signInRouter } from "./auth/sign-in.ts";
+import type { GymDatabase } from "./db/client.ts";
 import { errorHandler, HttpError } from "./http/errors.ts";
 import { noStore, securityHeaders } from "./http/security-headers.ts";
 
-/** Builds the app. clientDir is the folder Vite builds the client into (packages/client/dist). */
-export function createApp(clientDir: string): Express {
+/**
+ * Builds the app. clientDir is the folder Vite builds the client into (packages/client/dist), and
+ * setupSecretFile is the install script's secret for owner setup.
+ */
+export function createApp({
+  clientDir,
+  setupSecretFile,
+  db,
+}: {
+  clientDir: string;
+  setupSecretFile: string;
+  db: GymDatabase;
+}): Express {
   const app = express();
   const indexFile = join(resolve(clientDir), "index.html");
 
@@ -22,6 +37,12 @@ export function createApp(clientDir: string): Express {
   api.use(noStore);
   // Reads JSON request bodies up to 100 KB; a broken or larger body becomes a 4xx error
   api.use(express.json());
+  // Finds the signed-in account, if any, before any router runs
+  api.use(loadSession(db));
+  // Every write from a signed-in browser must carry its CSRF token
+  api.use(requireCsrfToken);
+  api.use("/auth", signInRouter(db));
+  api.use("/setup", setupRouter(db, setupSecretFile));
   api.use(() => {
     throw new HttpError(404, "not_found");
   });

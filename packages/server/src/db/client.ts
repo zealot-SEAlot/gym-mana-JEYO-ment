@@ -1,6 +1,10 @@
 // Opens the gym's SQLite database with the settings from the plan (KTD2).
+import { fileURLToPath } from "node:url";
+
 import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
 import { registerErasureFlag } from "../audit/audit-log.ts";
 
@@ -25,5 +29,17 @@ export function openDatabase(filePath: string): Database.Database {
   db.pragma("busy_timeout = 5000");
   // The audit triggers call this to tell an erasure's redaction from any other change (KTD9)
   registerErasureFlag(db);
+  return db;
+}
+
+const GYM_MIGRATIONS = fileURLToPath(new URL("./migrations/gym", import.meta.url));
+
+/**
+ * Opens the gym database and brings it up to the newest migration, for the server and the tests.
+ * U20 adds the release checks around this: a copy first, and refusing a newer schema (KTD17).
+ */
+export function openGymDatabase(filePath: string): GymDatabase {
+  const db = drizzle({ client: openDatabase(filePath) });
+  migrate(db, { migrationsFolder: GYM_MIGRATIONS });
   return db;
 }

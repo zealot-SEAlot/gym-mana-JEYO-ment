@@ -7,6 +7,8 @@ export type Config = {
   port: number;
   certFile: string;
   keyFile: string;
+  /** The secret the install script writes, which owner setup asks for (R49, KTD5) */
+  setupSecretFile: string;
   /** The built client pages */
   clientDir: string;
 };
@@ -30,6 +32,7 @@ export function readConfig(env: Record<string, string | undefined>): Config {
     port,
     certFile: join(dataDir, "tls", "server.crt"),
     keyFile: join(dataDir, "tls", "server.key"),
+    setupSecretFile: join(dataDir, "setup-secret.txt"),
     clientDir: resolve(import.meta.dirname, "../../client/dist"),
   };
 }
