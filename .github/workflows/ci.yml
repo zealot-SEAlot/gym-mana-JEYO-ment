@@ -31,8 +31,21 @@ jobs:
       - run: npm run build
       - run: npx playwright install chromium
       - run: npm run test:e2e
-      - run: npm audit --audit-level=moderate
-      # U2a adds a step here that fails when the database schema and its migrations drift apart (KTD17)
+      - run: npm audit --audit-level=moderate --omit=dev
+      - name: Fail when the database schema and its migrations drift apart
+        shell: bash
+        run: |
+          # KTD17: drizzle-kit writes a new migration only when a table definition changed
+          # without one. A clean folder afterwards means the committed migrations match the schema
+          npm run db:generate --workspace @jeyos/server
+          # --porcelain also lists untracked files, so a migration generate just wrote counts
+          changes=$(git status --porcelain -- packages/server/src/db/migrations)
+          if [ -n "$changes" ]; then
+            echo "::error::The schema changed without a migration. Run npm run db:generate --workspace @jeyos/server and commit the result."
+            printf '%s\n' "$changes"
+            exit 1
+          fi
+          echo "The migrations match the schema."
 
   repo-safety:
     runs-on: ubuntu-latest
@@ -64,3 +77,30 @@ jobs:
             exit 1
           fi
           echo "No binary files outside e2e/fixtures/."
+      - name: Block SQL files outside the migrations folder
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Drizzle writes the only SQL the repo needs; a database dump can hold member data
+          sql_files=$(git diff --name-only --no-renames --diff-filter=d "origin/$BASE_REF...HEAD" \
+            | grep -i '\.sql$' | grep -v '^packages/server/src/db/migrations/' || true)
+          if [ -n "$sql_files" ]; then
+            echo "::error::SQL files belong only in packages/server/src/db/migrations/. Never commit database dumps or backups."
+            printf '%s\n' "$sql_files"
+            exit 1
+          fi
+          echo "No SQL files outside packages/server/src/db/migrations/."
+      - name: Allow one new migration per database file
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # KTD17: each pull request adds at most one migration to each folder (gym, local-only)
+          added=$(git diff --name-only --no-renames --diff-filter=A "origin/$BASE_REF...HEAD" \
+            | { grep -E '^packages/server/src/db/migrations/[^/]+/[^/]+\.sql$' || true; })
+          too_many=$(printf '%s\n' "$added" | sed -n 's#/[^/]*$##p' | sort | uniq -c | awk '$1 > 1 { print $2 }')
+          if [ -n "$too_many" ]; then
+            echo "::error::Each pull request adds at most one migration per database file (KTD17). Combine this pull request's migrations in each folder below into one."
+            printf '%s\n' "$too_many"
+            exit 1
+          fi
+          echo "At most one new migration per database file."

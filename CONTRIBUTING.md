@@ -185,18 +185,6 @@ git commit --no-edit
 
 `--no-edit` accepts Git's default merge message. Plain `git commit` opens a text editor instead, which on a fresh Windows install is Vim, and getting out of it needs `:q!`.
 
-## How we use AI
-
-Our instructor allows AI help, but every member must be able to explain and defend the code. We pair with Claude on each unit:
-
-1. One teammate owns the unit and sits with Claude for it.
-2. Claude writes the unit in small steps and stops after each one.
-3. The owner reads the changed files, runs the commands or tests, and asks about anything unclear before the next step.
-4. The owner commits as the steps land, then writes the pull request's "In my own words" section without copying.
-5. The reviewer asks questions on the pull request until they could explain it too.
-
-Claude never commits, pushes, or merges; the team does.
-
 ## Rules
 
 - Never push directly to `main`; always use a pull request.
