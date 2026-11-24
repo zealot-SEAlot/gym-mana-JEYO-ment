@@ -32,6 +32,8 @@ describe("member routes", () => {
   let baseUrl: string;
   // Lee's browser at the desk: session cookie and CSRF token
   let staff: Record<string, string>;
+  // The owner's browser, for the owner-only route
+  let owner: Record<string, string>;
   let photosDir: string;
 
   beforeEach(async () => {
@@ -52,6 +54,11 @@ describe("member routes", () => {
     baseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
     const { token, csrfToken } = startSession(db, 2, new Date());
     staff = { Cookie: `__Host-jeyos-session=${token}`, "X-CSRF-Token": csrfToken };
+    const ownerSession = startSession(db, 1, new Date());
+    owner = {
+      Cookie: `__Host-jeyos-session=${ownerSession.token}`,
+      "X-CSRF-Token": ownerSession.csrfToken,
+    };
   });
 
   afterEach(async () => {
@@ -60,10 +67,10 @@ describe("member routes", () => {
     rmSync(join(photosDir, ".."), { recursive: true, force: true });
   });
 
-  function call(method: string, path: string, body?: unknown) {
+  function call(method: string, path: string, body?: unknown, as = staff) {
     return fetch(`${baseUrl}/api${path}`, {
       method,
-      headers: { "Content-Type": "application/json", ...staff },
+      headers: { "Content-Type": "application/json", ...as },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   }
@@ -85,6 +92,8 @@ describe("member routes", () => {
       phone: "09171234567",
       email: null,
       hasPhoto: false,
+      // No carried-over date or renewal yet, so never active
+      expiresOn: null,
     });
     // Lee's name is copied onto the member row (R50)
     expect(sqlite.prepare("SELECT entered_by_name FROM members").get()).toEqual({
@@ -207,6 +216,53 @@ describe("member routes", () => {
 
       expect(response.status).toBe(404);
       expect(await response.json()).toEqual({ error: "photo_not_found" });
+    });
+  });
+
+  describe("carried-over expiry", () => {
+    const carryOver = (id: unknown, expiresOn: string, as = owner) =>
+      call("POST", `/members/${String(id)}/carried-over-expiry`, { expiresOn }, as);
+
+    it("lets the owner enter an existing member's expiry, which the member then shows", async () => {
+      const { body } = await register();
+
+      expect((await carryOver(body.id, "2026-10-30")).status).toBe(204);
+      expect(await (await call("GET", `/members/${String(body.id)}`)).json()).toMatchObject({
+        expiresOn: "2026-10-30",
+      });
+    });
+
+    it("refuses a second one for the same member", async () => {
+      const { body } = await register();
+      await carryOver(body.id, "2026-10-30");
+
+      const response = await carryOver(body.id, "2026-12-31");
+
+      expect(response.status).toBe(409);
+      expect(await response.json()).toEqual({ error: "already_carried_over" });
+    });
+
+    it("refuses staff, who can't make a member active without a payment", async () => {
+      const { body } = await register();
+
+      const response = await carryOver(body.id, "2026-10-30", staff);
+
+      expect(response.status).toBe(403);
+      expect(sqlite.prepare("SELECT count(*) AS n FROM carried_over_expiries").get()).toEqual({
+        n: 0,
+      });
+    });
+
+    it("refuses a date that isn't a real day, and a member that doesn't exist", async () => {
+      const { body } = await register();
+      const badDate = await carryOver(body.id, "2026-02-30");
+
+      expect(badDate.status).toBe(400);
+      expect(await badDate.json()).toEqual({
+        error: "invalid_request",
+        details: { fields: { expiresOn: ["Enter a date like 2026-10-30"] } },
+      });
+      expect((await carryOver(999, "2026-10-30")).status).toBe(404);
     });
   });
 });

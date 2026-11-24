@@ -46,6 +46,8 @@ const EXPECTED: Record<string, Access[]> = {
   // Faces too: the door gets a photo only inside its own scan answer (U5)
   "POST /api/members/:id/photo": ["owner", "staff"],
   "GET /api/members/:id/photo": ["owner", "staff"],
+  // Making a member active without a payment is the owner's alone (R4, R44)
+  "POST /api/members/:id/carried-over-expiry": ["owner"],
   "GET /{*path}": ["anyone"],
 };
 
